@@ -2,14 +2,14 @@
 ## Importing and processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 06/06/2017
+## DATE MODIFIED: 06/07/2017
 ## AUTHORS: Benoit Parmentier and Elizabeth Daut 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
 ## TO DO:
 ##
-## COMMIT: initial commit
+## COMMIT: unzipping app data for specific month
 ##
 ## Links to investigate:
 
@@ -115,15 +115,41 @@ if(create_out_dir_param==TRUE){
 #set up the working directory
 #Create output directory
 
-lf <- list.files(in_dir)
+lf_dir <- list.files(in_dir,full.names=T)
 
 ##first unzip
 
+lf_zip <- unlist(lapply(lf_dir,function(x){list.files(pattern=paste("*.zip$",sep=""),
+                                                                  path=x,full.names=T)}))
+#lf_zip
+df_zip <- data.frame(file_zip=basename(lf_zip))
+
+df_zip$dir <- dirname(lf_zip)
+
+df_zip_fname <- file.path(out_dir,paste("df_zip","_",out_suffix,".txt",sep=""))
+write.table(df_zip,file=df_zip_fname,sep=",")
+
+
+###### Change path from the zip file to output dir??
+
+unzip_files <- T
+if(unzip_files==T){
+  nb_file <- length(lf_zip)
+  list_lf_r <- vector("list",length=nb_file)
+  for(i in 1:nb_file){
+    out_dir_zip <- sub(".zip","",(basename(lf_zip[[i]])))
+    lf_r <- lapply(lf_zip[[i]], unzip,exdir= out_dir_zip)
+    lf_r <- list.files(pattern="*csv$",path=out_dir_zip,full.names = T)
+    list_lf_r[[i]] <- lf_r
+  }
+}
+  
 
 ### then read in
 
 ### Add quote="" otherwise EOF warning and error in reading
-df <- read.table(file.path(in_dir,infile_name),sep=",",fill=T,quote="",header=F)
+#df <- read.table(file.path(df_zip$dir[1],df_zip$file_zip[1]),sep=",",fill=T,header=F)
+df <- read.table(file.path(lf_r[1],out_dir_zip),sep=",",fill=T)
 
 
 
