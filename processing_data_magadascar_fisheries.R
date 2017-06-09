@@ -2,7 +2,7 @@
 ## Importing and processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 06/07/2017
+## DATE MODIFIED: 06/09/2017
 ## AUTHORS: Benoit Parmentier and Elizabeth Daut 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -88,7 +88,7 @@ create_out_dir_param=TRUE # param 9
 NA_value <- -9999 # param 10
 NA_flag_val <- NA_value #param 11
 
-out_suffix <-"processing_fisheries_magadascar_06062017" #output suffix for the files and ouptut folder #param 12
+out_suffix <-"processing_fisheries_magadascar_06092017" #output suffix for the files and ouptut folder #param 12
 
 #download_file <- FALSE #param 14
 #unzip_files <- F #param 15
@@ -149,7 +149,7 @@ if(unzip_files==T){
 
 ### Add quote="" otherwise EOF warning and error in reading
 #df <- read.table(file.path(df_zip$dir[1],df_zip$file_zip[1]),sep=",",fill=T,header=F)
-df <- read.table(file.path(lf_r[1],out_dir_zip),sep=",",fill=T)
+df <- read.table(file.path(out_dir_zip,lf_r[1]),sep=",",fill=T)
 
 
 
