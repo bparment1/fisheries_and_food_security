@@ -2,7 +2,7 @@
 ## Importing and processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 06/09/2017
+## DATE MODIFIED: 06/14/2017
 ## AUTHORS: Benoit Parmentier and Elizabeth Daut 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -33,15 +33,10 @@ library(rgeos)                               # Geometric, topologic library of f
 library(gridExtra)                           # Combining lattice plots
 library(colorRamps)                          # Palette/color ramps for symbology
 library(ggplot2)
+library(lubridate)
+library(dplyr)
 
-###### Functions used in this script sourced from other files
-
-#function_rainfall_time_series_NEST_analyses <- "rainfall_time_series_NEST_function_12112015.R" #PARAM 1
-#script_path <- "/home/bparmentier/Google Drive/NEST/R_NEST" #path to script #PARAM 
-#script_path <- "/home/parmentier/Data/rainfall/NEST"
-#source(file.path(script_path,function_rainfall_time_series_NEST_analyses)) #source all functions used in this script 1.
-
-##### Functions used in this script 
+###### Functions used in this script and sourced from other files
 
 create_dir_fun <- function(outDir,out_suffix=NULL){
   #if out_suffix is not null then append out_suffix string
@@ -63,10 +58,6 @@ load_obj <- function(f){
   env[[nm]]
 }
 
-## Add processing of downloaded files!!
-## 1) crop and reproject if needed
-## 2) creation of TimeRaster object with summaries?
-## 3)
 ### Other functions ####
 
 #function_processing_data <- "processing_data_google_search_time_series_functions_06012017b.R" #PARAM 1
@@ -77,21 +68,13 @@ script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/
 #####  Parameters and argument set up ###########
 
 in_dir <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/workflow_preprocessing/data" #local bpy50 , param 1
-#in_dir <- "/home/parmentier/Data/rainfall/NEST" #NCEAS, param 
 out_dir <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/workflow_preprocessing/outputs" #param 2
-
-date_val <- "2017-04-15"
 
 num_cores <- 2 #param 8
 create_out_dir_param=TRUE # param 9
 
-NA_value <- -9999 # param 10
-NA_flag_val <- NA_value #param 11
-
-out_suffix <-"processing_fisheries_magadascar_06092017" #output suffix for the files and ouptut folder #param 12
-
-#download_file <- FALSE #param 14
-#unzip_files <- F #param 15
+out_suffix <-"processing_fisheries_magadascar_06142017" #output suffix for the files and ouptut folder #param 12
+unzip_files <- T #param 15
 
 ############## START SCRIPT ############################
 
@@ -115,31 +98,56 @@ if(create_out_dir_param==TRUE){
 #set up the working directory
 #Create output directory
 
-lf_dir <- list.files(in_dir,full.names=T)
-
-##first unzip
-
+lf_dir <- list.files(in_dir,full.names=T) #this is the list of folder with RAW data information
+##Get zip files in each input RAW dir
 lf_zip <- unlist(lapply(lf_dir,function(x){list.files(pattern=paste("*.zip$",sep=""),
                                                                   path=x,full.names=T)}))
-#lf_zip
+#Record list of files to unzip and path directory
 df_zip <- data.frame(file_zip=basename(lf_zip))
-
 df_zip$dir <- dirname(lf_zip)
+
+df_zip$file_zip <- as.character(df_zip$file_zip)
+function(x){list_str <- strsplit(df_zip$file_zip,"_"); list_str[3][1:8]}
+
+extract_date_feed2go <- function(string_val){
+  list_str <- strsplit(string_val,"_"); 
+  date_val <- list_str[[1]][3]
+  #substr(x, start, stop)
+  date_val <- substr(date_val, start=1, stop=8)
+  date_val <- as.Date(date_val,format = "%Y%m%d")
+  date_val <- as.character(date_val)
+  return(date_val)
+}
+
+#debug(extract_date_feed2go)
+#extract_date_feed2go(df_zip$file_zip[1])
+list_date <- lapply(df_zip$file_zip,FUN=extract_date_feed2go)
+
+df_zip$date <- unlist(list_date)
+
+#reorder by date
+
+#head(df_zip)
+#class(ymd((df_zip$date)))
+#class((df_zip$date))
+df_zip$date <- ymd(df_zip$date)
+
+df_zip <- arrange(df_zip, df_zip$date)
 
 df_zip_fname <- file.path(out_dir,paste("df_zip","_",out_suffix,".txt",sep=""))
 write.table(df_zip,file=df_zip_fname,sep=",")
 
+###### unzip files:
 
-###### Change path from the zip file to output dir??
-
-unzip_files <- T
+#if unzip_files is TRUE
 if(unzip_files==T){
-  nb_file <- length(lf_zip)
-  list_lf_r <- vector("list",length=nb_file)
-  for(i in 1:nb_file){
+  nb_zipped_file <- length(lf_zip)
+  list_lf_r <- vector("list",length=nb_zipped_file)
+  for(i in 1:nb_zipped_file){
     out_dir_zip <- sub(".zip","",(basename(lf_zip[[i]])))
     lf_r <- lapply(lf_zip[[i]], unzip,exdir= out_dir_zip)
     lf_r <- list.files(pattern="*csv$",path=out_dir_zip,full.names = T)
+    #lf_r <- file.path(out_dir_zip,lf_r)
     list_lf_r[[i]] <- lf_r
   }
 }
@@ -149,7 +157,13 @@ if(unzip_files==T){
 
 ### Add quote="" otherwise EOF warning and error in reading
 #df <- read.table(file.path(df_zip$dir[1],df_zip$file_zip[1]),sep=",",fill=T,header=F)
-df <- read.table(file.path(out_dir_zip,lf_r[1]),sep=",",fill=T)
+
+read_file_feed2go <- function(in_filename,in_dir="."){
+  df <- read.table(file.path(in_dir,in_filename),sep=";",fill=T,head=T)
+}
+
+#quick test of reading in some data
+list_df <- lapply(list_lf_r[[1]],read_file_feed2go,out_dir)
 
 
 
