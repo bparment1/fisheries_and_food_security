@@ -2,14 +2,14 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 06/06/2017
+## DATE MODIFIED: 06/14/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
 ## TO DO:
 ##
-## COMMIT: initial commit
+## COMMIT: adding function to process date and read in data from feed2go
 ##
 ## Links to investigate:
 
@@ -78,6 +78,20 @@ import_data_survey <- function(infile_name,in_dir=".",date="",out_dir=".", out_s
   write.table(df,file=out_filename,sep=",")
   
   return(out_filename)
+}
+
+extract_date_feed2go <- function(string_val){
+  list_str <- strsplit(string_val,"_"); 
+  date_val <- list_str[[1]][3]
+  #substr(x, start, stop)
+  date_val <- substr(date_val, start=1, stop=8)
+  date_val <- as.Date(date_val,format = "%Y%m%d")
+  date_val <- as.character(date_val)
+  return(date_val)
+}
+
+read_file_feed2go <- function(in_filename,in_dir="."){
+  df <- read.table(file.path(in_dir,in_filename),sep=";",fill=T,head=T)
 }
 
 
