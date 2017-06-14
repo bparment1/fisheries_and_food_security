@@ -94,27 +94,5 @@ read_file_feed2go <- function(in_filename,in_dir="."){
   df <- read.table(file.path(in_dir,in_filename),sep=";",fill=T,head=T)
 }
 
-summary_data_table <- function(list_lf){
-  
-  #list_df <- lapply(list_lf_r[[1]],read_file_feed2go,out_dir)
-  list_df <- lapply(list_lf,read_file_feed2go,out_dir)
-  #lapply(list_df,summary_table_df)
-  dim_df <- dim_surveys_df(list_df)
-  dim_df$filename <- basename(list_lf)
-  dim_df$zip_file <- dirname(list_lf)
-  #View(dim_df)
-  
-  ### Prepare return object
-  obj_summary <- list(dim_df,list_df)
-  names(obj_summary)<- c("dim_df","list_df")
-  return(obj_summary)
-}
-
-dim_surveys_df <- function(list_df){
-  dim_df<- (lapply(list_df,function(x){data.frame(nrow=dim(x)[1],ncol=dim(x)[2])}))
-  dim_df <- do.call(rbind,dim_df)
-  #View(dim_df)
-  return(dim_df)
-}
 
 #################################  END OF SCRIPT  ##################################
