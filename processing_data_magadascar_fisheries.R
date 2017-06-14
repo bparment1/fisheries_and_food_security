@@ -105,24 +105,11 @@ lf_zip <- unlist(lapply(lf_dir,function(x){list.files(pattern=paste("*.zip$",sep
 #Record list of files to unzip and path directory
 df_zip <- data.frame(file_zip=basename(lf_zip))
 df_zip$dir <- dirname(lf_zip)
-
 df_zip$file_zip <- as.character(df_zip$file_zip)
-function(x){list_str <- strsplit(df_zip$file_zip,"_"); list_str[3][1:8]}
-
-extract_date_feed2go <- function(string_val){
-  list_str <- strsplit(string_val,"_"); 
-  date_val <- list_str[[1]][3]
-  #substr(x, start, stop)
-  date_val <- substr(date_val, start=1, stop=8)
-  date_val <- as.Date(date_val,format = "%Y%m%d")
-  date_val <- as.character(date_val)
-  return(date_val)
-}
 
 #debug(extract_date_feed2go)
 #extract_date_feed2go(df_zip$file_zip[1])
 list_date <- lapply(df_zip$file_zip,FUN=extract_date_feed2go)
-
 df_zip$date <- unlist(list_date)
 
 #reorder by date
@@ -130,9 +117,8 @@ df_zip$date <- unlist(list_date)
 #head(df_zip)
 #class(ymd((df_zip$date)))
 #class((df_zip$date))
-df_zip$date <- ymd(df_zip$date)
-
-df_zip <- arrange(df_zip, df_zip$date)
+df_zip$date <- ymd(df_zip$date) #coerce to date using lubridate function, year-month-day format
+df_zip <- arrange(df_zip, df_zip$date) #order by date using dplyr function
 
 df_zip_fname <- file.path(out_dir,paste("df_zip","_",out_suffix,".txt",sep=""))
 write.table(df_zip,file=df_zip_fname,sep=",")
@@ -153,18 +139,45 @@ if(unzip_files==T){
 }
   
 
-### then read in
+### Reading in all the datasets and summarizing information
 
-### Add quote="" otherwise EOF warning and error in reading
-#df <- read.table(file.path(df_zip$dir[1],df_zip$file_zip[1]),sep=",",fill=T,header=F)
-
-read_file_feed2go <- function(in_filename,in_dir="."){
-  df <- read.table(file.path(in_dir,in_filename),sep=";",fill=T,head=T)
+summary_data_table <- function(list_lf){
+  
+  #list_df <- lapply(list_lf_r[[1]],read_file_feed2go,out_dir)
+  list_df <- lapply(list_lf,read_file_feed2go,out_dir)
+  #lapply(list_df,summary_table_df)
+  dim_df <- dim_surveys_df(list_df)
+  dim_df$filename <- basename(list_lf)
+  dim_df$zip_file <- dirname(list_lf)
+  #View(dim_df)
+  
+  ### Prepare return object
+  obj_summary <- list(dim_df,list_df)
+  names(obj_summary)<- c("dim_df","list_df")
+  return(obj_summary)
 }
 
+dim_surveys_df <- function(list_df){
+  dim_df<- (lapply(list_df,function(x){data.frame(nrow=dim(x)[1],ncol=dim(x)[2])}))
+  dim_df <- do.call(rbind,dim_df)
+  #View(dim_df)
+  return(dim_df)
+}
 #quick test of reading in some data
-list_df <- lapply(list_lf_r[[1]],read_file_feed2go,out_dir)
+undebug(summary_data_table)
+test_summary <- summary_data_table(list_lf_r[[1]])
+names(test_summary)
+
+list_obj_summary <- lapply(list_lf_r[1:2],summary_data_table)
+list_obj_summary <- mclapply(list_lf_r, 
+                             FUN=summary_data_table,
+                             mc.preschedule = F,
+                             mc.cores = num_cores)
+
+### 11 error messages
+### error in 4
+list_obj_summary[[4]]
 
 
 
-#############
+############################ END OF SCRIPT #####################################
