@@ -3,8 +3,7 @@
 ## 
 ## DATE CREATED: 06/06/2017
 ## DATE MODIFIED: 06/14/2017
-## AUTHORS: Benoit Parmentier and Elizabeth Daut 
-## Version: 1
+## AUTHORS: Benoit Parmentier 
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
 ## TO DO:
@@ -60,9 +59,9 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-#function_processing_data <- "processing_data_google_search_time_series_functions_06012017b.R" #PARAM 1
+function_processing_data <- "processing_data_magadascar_fisheries_functions_06142017b.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
-#source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
+source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
 ############################################################################
 #####  Parameters and argument set up ###########
@@ -141,30 +140,8 @@ if(unzip_files==T){
 
 ### Reading in all the datasets and summarizing information
 
-summary_data_table <- function(list_lf){
-  
-  #list_df <- lapply(list_lf_r[[1]],read_file_feed2go,out_dir)
-  list_df <- lapply(list_lf,read_file_feed2go,out_dir)
-  #lapply(list_df,summary_table_df)
-  dim_df <- dim_surveys_df(list_df)
-  dim_df$filename <- basename(list_lf)
-  dim_df$zip_file <- dirname(list_lf)
-  #View(dim_df)
-  
-  ### Prepare return object
-  obj_summary <- list(dim_df,list_df)
-  names(obj_summary)<- c("dim_df","list_df")
-  return(obj_summary)
-}
-
-dim_surveys_df <- function(list_df){
-  dim_df<- (lapply(list_df,function(x){data.frame(nrow=dim(x)[1],ncol=dim(x)[2])}))
-  dim_df <- do.call(rbind,dim_df)
-  #View(dim_df)
-  return(dim_df)
-}
 #quick test of reading in some data
-undebug(summary_data_table)
+#undebug(summary_data_table)
 test_summary <- summary_data_table(list_lf_r[[1]])
 names(test_summary)
 
@@ -177,6 +154,37 @@ list_obj_summary <- mclapply(list_lf_r,
 ### 11 error messages
 ### error in 4
 list_obj_summary[[4]]
+list_obj_summary[[1]]$dim_df
+
+#30x46
+length(list_obj_summary)
+
+list_dim_df <- mclapply(1:length(list_obj_summary),
+                        FUN=function(i){list_obj_summary[[i]]$dim_df},
+                        mc.preschedule = F,
+                        mc.cores = num_cores)
+test_dim_df <- do.call(rbind,list_dim_df)
+dim(test_dim_df)
+View(test_dim_df)
+
+out_filename <- paste0("summary_table_df_",out_suffix,".txt")
+write.table(test_dim_df,file= file.path(out_dir,out_filename),sep=",")
+
+#undebug(summary_data_table)
+test_summary <- summary_data_table(list_lf_r[[1]])
+names(test_summary)
+
+## To combine data: use
+#1) extracted names from the file names (use first char??)
+#2) Using survey names pre-given
+### Survey names:
+#Fahasalamana
+#Fahasalamana isanbolana
+#Karazan-tsakafo 
+#Laoko 
+#Measure Sakafo
+#Mpanjono
+#Vola isambolana
 
 
 
