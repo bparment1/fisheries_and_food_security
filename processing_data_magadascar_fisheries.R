@@ -3,7 +3,8 @@
 ## 
 ## DATE CREATED: 06/06/2017
 ## DATE MODIFIED: 06/14/2017
-## AUTHORS: Benoit Parmentier 
+## AUTHORS: Benoit Parmentier and Elizabeth Daut 
+## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
 ## TO DO:
@@ -59,9 +60,9 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_magadascar_fisheries_functions_06142017b.R" #PARAM 1
+#function_processing_data <- "processing_data_google_search_time_series_functions_06012017b.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
-source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
+#source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
 ############################################################################
 #####  Parameters and argument set up ###########
@@ -104,11 +105,24 @@ lf_zip <- unlist(lapply(lf_dir,function(x){list.files(pattern=paste("*.zip$",sep
 #Record list of files to unzip and path directory
 df_zip <- data.frame(file_zip=basename(lf_zip))
 df_zip$dir <- dirname(lf_zip)
+
 df_zip$file_zip <- as.character(df_zip$file_zip)
+function(x){list_str <- strsplit(df_zip$file_zip,"_"); list_str[3][1:8]}
+
+extract_date_feed2go <- function(string_val){
+  list_str <- strsplit(string_val,"_"); 
+  date_val <- list_str[[1]][3]
+  #substr(x, start, stop)
+  date_val <- substr(date_val, start=1, stop=8)
+  date_val <- as.Date(date_val,format = "%Y%m%d")
+  date_val <- as.character(date_val)
+  return(date_val)
+}
 
 #debug(extract_date_feed2go)
 #extract_date_feed2go(df_zip$file_zip[1])
 list_date <- lapply(df_zip$file_zip,FUN=extract_date_feed2go)
+
 df_zip$date <- unlist(list_date)
 
 #reorder by date
@@ -116,8 +130,9 @@ df_zip$date <- unlist(list_date)
 #head(df_zip)
 #class(ymd((df_zip$date)))
 #class((df_zip$date))
-df_zip$date <- ymd(df_zip$date) #coerce to date using lubridate function, year-month-day format
-df_zip <- arrange(df_zip, df_zip$date) #order by date using dplyr function
+df_zip$date <- ymd(df_zip$date)
+
+df_zip <- arrange(df_zip, df_zip$date)
 
 df_zip_fname <- file.path(out_dir,paste("df_zip","_",out_suffix,".txt",sep=""))
 write.table(df_zip,file=df_zip_fname,sep=",")
@@ -138,54 +153,18 @@ if(unzip_files==T){
 }
   
 
-### Reading in all the datasets and summarizing information
+### then read in
+
+### Add quote="" otherwise EOF warning and error in reading
+#df <- read.table(file.path(df_zip$dir[1],df_zip$file_zip[1]),sep=",",fill=T,header=F)
+
+read_file_feed2go <- function(in_filename,in_dir="."){
+  df <- read.table(file.path(in_dir,in_filename),sep=";",fill=T,head=T)
+}
 
 #quick test of reading in some data
-#undebug(summary_data_table)
-test_summary <- summary_data_table(list_lf_r[[1]])
-names(test_summary)
-
-list_obj_summary <- lapply(list_lf_r[1:2],summary_data_table)
-list_obj_summary <- mclapply(list_lf_r, 
-                             FUN=summary_data_table,
-                             mc.preschedule = F,
-                             mc.cores = num_cores)
-
-### 11 error messages
-### error in 4
-list_obj_summary[[4]]
-list_obj_summary[[1]]$dim_df
-
-#30x46
-length(list_obj_summary)
-
-list_dim_df <- mclapply(1:length(list_obj_summary),
-                        FUN=function(i){list_obj_summary[[i]]$dim_df},
-                        mc.preschedule = F,
-                        mc.cores = num_cores)
-test_dim_df <- do.call(rbind,list_dim_df)
-dim(test_dim_df)
-View(test_dim_df)
-
-out_filename <- paste0("summary_table_df_",out_suffix,".txt")
-write.table(test_dim_df,file= file.path(out_dir,out_filename),sep=",")
-
-#undebug(summary_data_table)
-test_summary <- summary_data_table(list_lf_r[[1]])
-names(test_summary)
-
-## To combine data: use
-#1) extracted names from the file names (use first char??)
-#2) Using survey names pre-given
-### Survey names:
-#Fahasalamana
-#Fahasalamana isanbolana
-#Karazan-tsakafo 
-#Laoko 
-#Measure Sakafo
-#Mpanjono
-#Vola isambolana
+list_df <- lapply(list_lf_r[[1]],read_file_feed2go,out_dir)
 
 
 
-############################ END OF SCRIPT #####################################
+#############
