@@ -9,7 +9,7 @@
 ## ISSUE: 
 ## TO DO:
 ##
-## COMMIT: debugging function to process date and read in data from feed2go
+## COMMIT: changes to combine survey function
 ##
 ## Links to investigate:
 
@@ -52,7 +52,9 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
   #if in_dir is null then the path is contained in the filename
   
   if(is.null(in_dir)){
-    df <- read.table(in_filename,sep=";",fill=T,head=T)
+    #df <- read.table(in_filename,sep=";",fill=T,head=T, fileEncoding = "UTF-8")
+    df <- read.table(in_filename,sep=";",fill=T,head=T, fileEncoding = "UTF-8")
+    
   }else{
     df <- read.table(file.path(in_dir,in_filename),sep=";",fill=T,head=T)
   }
@@ -108,7 +110,7 @@ combine_by_id_survey<- function(i,surveys_names,list_filenames,out_suffix,out_di
   
   df_survey$filename <- unlist(list_column_filename) #adding identifier for tile
   out_filename <- paste0(surveys_names[i],out_suffix,".txt")
-  write.table(df_survey,file.path(out_dir,out_filename))
+  write.table(df_survey,file.path(out_dir,out_filename),sep=",")
   
   return(out_filename)
 }
@@ -135,9 +137,19 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,out_suffix,
   ##### Now loop through and bind data.frames
   browser()
   
+  
   #debug(combine_by_id_survey)
-  combine_by_id_survey(1,surveys_names,list_filenames,out_suffix,out_dir)
-    
+  test_filename<- combine_by_id_survey(2,surveys_names,list_filenames,out_suffix,out_dir)
+  test_df <- read.table(test_filename,sep=",",header=T)
+  # Start writing to an output file
+  if(file.exists("warnings_messages.txt")){
+    file.remove("warnings_messages.txt")
+  }
+  sink('warnings_messages.txt')
+  warnings()
+  # Stop writing to the file
+  sink()
+  
   list_survey_df <- mclapply(1:length(surveys_names),
                              FUN=combine_by_id_survey,
                              list_filenames=list_filenames,
@@ -145,10 +157,11 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,out_suffix,
                              out_dir=out_dir,
                              mc.preschedule = F,
                              mc.cores = num_cores)
+  index_error <- lapply(list_survey_df,FUN=function(x){!inherits(x,"try-error")})
   
   #### prepare obj
   
-  
+
   return()
 }
 
