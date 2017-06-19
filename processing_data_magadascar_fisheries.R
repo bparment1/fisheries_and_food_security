@@ -8,7 +8,7 @@
 ## ISSUE: 
 ## TO DO:
 ##
-## COMMIT: moving function to combine data survey in function script 
+## COMMIT: debugging function to combine data surveys
 ##
 ## Links to investigate:
 
@@ -59,7 +59,7 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_magadascar_fisheries_functions_06192017b.R" #PARAM 1
+function_processing_data <- "processing_data_magadascar_fisheries_functions_06192017d.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
 source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
@@ -186,6 +186,7 @@ names(test_summary)
 #Mpanjono
 #Vola isambolana
 
+#undebug(combine_by_surveys)
 test <- combine_by_surveys(list_filenames,surveys_names,num_cores,out_suffix,out_dir)
   
 #> test <- combine_by_surveys(list_filenames,surveys_names,num_cores,out_suffix,out_dir)
