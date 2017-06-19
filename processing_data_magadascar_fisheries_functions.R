@@ -2,7 +2,7 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 06/19/2017
+## DATE MODIFIED: 06/20/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -109,7 +109,7 @@ combine_by_id_survey<- function(i,surveys_names,list_filenames,out_suffix,out_di
                                  FUN=function(i,x,y){rep(y[i],nrow(x[[i]]))},x=list_df,y=names(list_df))
   
   df_survey$filename <- unlist(list_column_filename) #adding identifier for tile
-  out_filename <- paste0(surveys_names[i],out_suffix,".txt")
+  out_filename <- paste0(surveys_names[i],"_",out_suffix,".txt")
   write.table(df_survey,file.path(out_dir,out_filename),sep=",")
   
   return(out_filename)
@@ -131,16 +131,16 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,out_suffix,
                              mc.cores = num_cores)
     
     surveys_names <- unique(unlist(list_ID_char))
-    
+    surveys_names <- grep("Error",surveys_names,invert=T,value=T)
   }
   
   ##### Now loop through and bind data.frames
-  browser()
+  #browser()
   
   
   #debug(combine_by_id_survey)
   test_filename<- combine_by_id_survey(2,surveys_names,list_filenames,out_suffix,out_dir)
-  test_df <- read.table(test_filename,sep=",",header=T)
+  #test_df <- read.table(test_filename,sep=",",header=T,check.names = F)
   # Start writing to an output file
   if(file.exists("warnings_messages.txt")){
     file.remove("warnings_messages.txt")
@@ -152,17 +152,21 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,out_suffix,
   
   list_survey_df <- mclapply(1:length(surveys_names),
                              FUN=combine_by_id_survey,
+                             surveys_names = surveys_names,
                              list_filenames=list_filenames,
                              out_suffix=out_suffix,
                              out_dir=out_dir,
                              mc.preschedule = F,
                              mc.cores = num_cores)
-  index_error <- lapply(list_survey_df,FUN=function(x){!inherits(x,"try-error")})
+  
+  #index_error <- lapply(list_survey_df,FUN=function(x){!inherits(x,"try-error")})
+  #test_df <- read.table(test_filename,sep=",",header=T,check.names = F)
+  list_survey_df <- file.path(out_dir,unlist(list_survey_df))
   
   #### prepare obj
   
 
-  return()
+  return(list_survey_df)
 }
 
 
