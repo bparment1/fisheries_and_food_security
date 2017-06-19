@@ -2,7 +2,7 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 06/14/2017
+## DATE MODIFIED: 06/19/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -81,5 +81,72 @@ dim_surveys_df <- function(list_df){
   #View(dim_df)
   return(dim_df)
 }
+
+combine_by_id_survey<- function(i,surveys_names,list_filenames,out_suffix,out_dir){
+  #
+  #
+  
+  list_lf <- grep(surveys_names[i],list_filenames,value=T)
+  list_dir <- test_dim_df$zip_file[grep(surveys_names[i],list_filenames,value=F)]
+  list_lf <- file.path(out_dir,list_dir,list_lf)
+  
+  ###
+  list_df <- lapply(list_lf,read_file_feed2go) # use default option
+  
+  df_survey <- do.call(rbind.fill,list_df)
+  #for(list_I)
+  ### Note there could be replicated information!!!, screen for identical rows later on...
+  #add id from filename before binding...
+  names(list_df) <- list_lf
+  
+  #repeat filename to fill in new columns with ID
+  list_column_filename <- lapply(1:length(list_df),
+                                 FUN=function(i,x,y){rep(y[i],nrow(x[[i]]))},x=list_df,y=names(list_df))
+  
+  df_survey$filename <- unlist(list_column_filename) #adding identifier for tile
+  out_filename <- paste0(surveys_names[i],out_suffix,".txt")
+  write.tabel(df_survey,file.path(out_dir,out_filename))
+  
+  return(out_filename)
+}
+
+
+combine_by_surveys<- function(list_filenames,surveys_names,num_cores,out_suffix,out_dir){
+  #
+  #
+  #
+  if(is.null(surveys_names)){
+    
+    list_combined_df_file_ID <- strsplit(list_filenames," ")
+    
+    list_combined_df_file_ID[[2]]
+    list_ID_char <- mclapply(1:length(list_combined_df_file_ID),
+                             FUN=function(i){list_combined_df_file_ID[[i]][1]},
+                             mc.preschedule = F,
+                             mc.cores = num_cores)
+    
+    surveys_names <- unique(unlist(list_ID_char))
+    
+    list_filenames <- test_dim_df$filename
+  }
+  
+  ##### Now loop through and bind data.frames
+  
+  #combine_by_id_survey<- function(i,surveys_names,list_filenames,out_suffix,out_dir){
+  
+  list_survey_df <- mclapply(1:length(surveys_names),
+                             FUN=combine_by_id_survey,
+                             list_filenames=list_filenames,
+                             out_suffix=out_suffix,
+                             out_dir=out_dir,
+                             mc.preschedule = F,
+                             mc.cores = num_cores)
+  
+  #### prepare obj
+  
+  
+  return()
+}
+
 
 #################################  END OF SCRIPT  ##################################
