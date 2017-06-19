@@ -9,7 +9,7 @@
 ## ISSUE: 
 ## TO DO:
 ##
-## COMMIT: adding function to process date and read in data from feed2go
+## COMMIT: debugging function to process date and read in data from feed2go
 ##
 ## Links to investigate:
 
@@ -92,6 +92,9 @@ combine_by_id_survey<- function(i,surveys_names,list_filenames,out_suffix,out_di
   
   ###
   list_df <- lapply(list_lf,read_file_feed2go) # use default option
+  lapply(list_df,function(x){inherits(x,"try-error")})
+  #sum(unlist(lapply(list_df,function(x){inherits(x,"try-error")})))
+  #0 #this means no try-error
   
   df_survey <- do.call(rbind.fill,list_df)
   #for(list_I)
@@ -105,7 +108,7 @@ combine_by_id_survey<- function(i,surveys_names,list_filenames,out_suffix,out_di
   
   df_survey$filename <- unlist(list_column_filename) #adding identifier for tile
   out_filename <- paste0(surveys_names[i],out_suffix,".txt")
-  write.tabel(df_survey,file.path(out_dir,out_filename))
+  write.table(df_survey,file.path(out_dir,out_filename))
   
   return(out_filename)
 }
@@ -127,13 +130,14 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,out_suffix,
     
     surveys_names <- unique(unlist(list_ID_char))
     
-    list_filenames <- test_dim_df$filename
   }
   
   ##### Now loop through and bind data.frames
+  browser()
   
-  #combine_by_id_survey<- function(i,surveys_names,list_filenames,out_suffix,out_dir){
-  
+  #debug(combine_by_id_survey)
+  combine_by_id_survey(1,surveys_names,list_filenames,out_suffix,out_dir)
+    
   list_survey_df <- mclapply(1:length(surveys_names),
                              FUN=combine_by_id_survey,
                              list_filenames=list_filenames,
