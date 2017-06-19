@@ -8,7 +8,7 @@
 ## ISSUE: 
 ## TO DO:
 ##
-## COMMIT: combining data by survey fist attempt
+## COMMIT: moving function to combine data survey in function script 
 ##
 ## Links to investigate:
 
@@ -59,7 +59,7 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_magadascar_fisheries_functions_06192017.R" #PARAM 1
+function_processing_data <- "processing_data_magadascar_fisheries_functions_06192017b.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
 source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
@@ -186,36 +186,13 @@ names(test_summary)
 #Mpanjono
 #Vola isambolana
 
-list_combined_df_file_ID <- strsplit(test_dim_df$filename," ")
-
-list_combined_df_file_ID[[2]]
-list_ID_char <- mclapply(1:length(list_combined_df_file_ID),
-                        FUN=function(i){list_combined_df_file_ID[[i]][1]},
-                        mc.preschedule = F,
-                        mc.cores = num_cores)
-
-surveys_names <- unique(unlist(list_ID_char))
-
-list_filenames <- test_dim_df$filename
-
-
-list_lf <- grep(surveys_names[2],list_filenames,value=T)
-list_dir <- test_dim_df$zip_file[grep(surveys_names[2],list_filenames,value=F)]
-list_lf <- file.path(out_dir,list_dir,list_lf)
-
-
-###
-list_df <- lapply(list_lf,read_file_feed2go) # use default option
-
-df_survey <- do.call(rbind.fill,list_df)
-#for(list_I)
-### Note there could be replicated information!!!, screen for identical rows later on...
-#add id from filename before binding...
-names(list_df)<- list_lf
-list_column_filename <- lapply(1:length(list_df),
-                      FUN=function(i,x,y){rep(y[i],nrow(x[[i]]))},x=list_df,y=names(list_df))
-
-
-df_survey$filename <- unlist(list_column_filename) #adding identifier for tile
+test <- combine_by_surveys(list_filenames,surveys_names,num_cores,out_suffix,out_dir)
+  
+#> test <- combine_by_surveys(list_filenames,surveys_names,num_cores,out_suffix,out_dir)
+#Warning message:
+#  In mclapply(1:length(surveys_names), FUN = combine_by_id_survey,  :
+#                7 function calls resulted in an error
+#> test
+#NULL
 
 ############################ END OF SCRIPT #####################################
