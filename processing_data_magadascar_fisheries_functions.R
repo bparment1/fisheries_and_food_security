@@ -53,10 +53,10 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
   
   if(is.null(in_dir)){
     #df <- read.table(in_filename,sep=";",fill=T,head=T, fileEncoding = "UTF-8")
-    df <- read.table(in_filename,sep=";",fill=T,head=T, fileEncoding = "UTF-8")
+    df <- read.table(in_filename,sep=";",fill=T,header=T, stringsAsFactors = F)
     
   }else{
-    df <- read.table(file.path(in_dir,in_filename),sep=";",fill=T,head=T)
+    df <- read.table(file.path(in_dir,in_filename),sep=";",fill=T,header=T)
   }
   return(df)
 }
@@ -78,6 +78,7 @@ summary_data_table <- function(list_lf){
 }
 
 dim_surveys_df <- function(list_df){
+  #
   dim_df<- (lapply(list_df,function(x){data.frame(nrow=dim(x)[1],ncol=dim(x)[2])}))
   dim_df <- do.call(rbind,dim_df)
   #View(dim_df)
@@ -108,9 +109,9 @@ combine_by_id_survey<- function(i,surveys_names,list_filenames,out_suffix,out_di
   list_column_filename <- lapply(1:length(list_df),
                                  FUN=function(i,x,y){rep(y[i],nrow(x[[i]]))},x=list_df,y=names(list_df))
   
-  df_survey$filename <- unlist(list_column_filename) #adding identifier for tile
+  df_survey$filename <- unlist(list_column_filename) #adding identifier for table
   out_filename <- paste0(surveys_names[i],"_",out_suffix,".txt")
-  write.table(df_survey,file.path(out_dir,out_filename),sep=",")
+  write.table(df_survey,file.path(out_dir,out_filename),sep=",",row.names = F)
   
   return(out_filename)
 }
@@ -124,7 +125,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,out_suffix,
     
     list_combined_df_file_ID <- strsplit(list_filenames," ")
     
-    list_combined_df_file_ID[[2]]
+    #list_combined_df_file_ID[[2]]
     list_ID_char <- mclapply(1:length(list_combined_df_file_ID),
                              FUN=function(i){list_combined_df_file_ID[[i]][1]},
                              mc.preschedule = F,
