@@ -59,7 +59,7 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_magadascar_fisheries_functions_06202017.R" #PARAM 1
+function_processing_data <- "processing_data_magadascar_fisheries_functions_06202017b.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
 source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
@@ -145,17 +145,17 @@ if(unzip_files==T){
 test_summary <- summary_data_table(list_lf_r[[1]])
 names(test_summary)
 
-list_obj_summary <- lapply(list_lf_r[1:2],summary_data_table)
+#list_obj_summary <- lapply(list_lf_r[1:2],summary_data_table)
 list_obj_summary <- mclapply(list_lf_r, 
                              FUN=summary_data_table,
                              mc.preschedule = F,
                              mc.cores = num_cores)
 
-### 11 error messages
-### error in 4
-list_obj_summary[[4]]
-list_obj_summary[[1]]$dim_df
-
+#> warnings()
+#Warning message:
+#  In mclapply(list_lf_r, FUN = summary_data_table, mc.preschedule = F,  ... :
+#                11 function calls resulted in an error
+              
 #30x46
 length(list_obj_summary)
 
@@ -163,6 +163,7 @@ list_dim_df <- mclapply(1:length(list_obj_summary),
                         FUN=function(i){list_obj_summary[[i]]$dim_df},
                         mc.preschedule = F,
                         mc.cores = num_cores)
+
 test_dim_df <- do.call(rbind,list_dim_df)
 dim(test_dim_df)
 View(test_dim_df)
@@ -176,6 +177,23 @@ names(test_summary)
 
 ## To combine data: use
 #1) extracted names from the file names (use first char??)
+
+#undebug(combine_by_surveys)
+list_filenames <- test_dim_df$filename
+
+  
+
+list_combined_df_file_ID <- strsplit(list_filenames," ")
+
+list_combined_df_file_ID[[2]]
+list_ID_char <- mclapply(1:length(list_combined_df_file_ID),
+                         FUN=function(i){list_combined_df_file_ID[[i]][1]},
+                         mc.preschedule = F,
+                         mc.cores = num_cores)
+
+surveys_names <- unique(unlist(list_ID_char))
+surveys_names <- grep("Error",surveys_names,invert=T,value=T)
+
 #2) Using survey names pre-given
 ### Survey names:
 #Fahasalamana
@@ -186,9 +204,25 @@ names(test_summary)
 #Mpanjono
 #Vola isambolana
 
-#undebug(combine_by_surveys)
-list_survey_df_filename <- combine_by_surveys(list_filenames,surveys_names=NULL,num_cores,out_suffix,out_dir)
+combine
+
+grep("Karazan-tsakafo",list_filenames,value = T)
+
+#, Laoko, Mpanjono
+combine_survey_by_colum <- 
   
+  
+c("Fahasalamana",
+  "Fahasalamana isanbolana",
+  "Karazan-tsakafo", 
+  "Laoko", 
+  "Measure Sakafo",
+  "Mpanjono",
+  "Vola isambolana")
+
+debug(combine_by_surveys)
+list_survey_df_filename <- combine_by_surveys(list_filenames,surveys_names=NULL,num_cores,out_suffix,out_dir)
+
 #> test <- combine_by_surveys(list_filenames,surveys_names,num_cores,out_suffix,out_dir)
 #Warning message:
 #  In mclapply(1:length(surveys_names), FUN = combine_by_id_survey,  :
