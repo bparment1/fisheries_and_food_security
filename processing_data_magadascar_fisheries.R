@@ -2,7 +2,7 @@
 ## Importing and processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 06/19/2017
+## DATE MODIFIED: 06/20/2017
 ## AUTHORS: Benoit Parmentier 
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
@@ -59,7 +59,7 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_magadascar_fisheries_functions_06192017d.R" #PARAM 1
+function_processing_data <- "processing_data_magadascar_fisheries_functions_06202017.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
 source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
@@ -72,7 +72,7 @@ out_dir <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/work
 num_cores <- 2 #param 8
 create_out_dir_param=TRUE # param 9
 
-out_suffix <-"processing_fisheries_magadascar_06142017" #output suffix for the files and ouptut folder #param 12
+out_suffix <-"processing_fisheries_magadascar_06202017" #output suffix for the files and ouptut folder #param 12
 unzip_files <- T #param 15
 
 ############## START SCRIPT ############################
@@ -187,7 +187,7 @@ names(test_summary)
 #Vola isambolana
 
 #undebug(combine_by_surveys)
-test <- combine_by_surveys(list_filenames,surveys_names,num_cores,out_suffix,out_dir)
+list_survey_df_filename <- combine_by_surveys(list_filenames,surveys_names=NULL,num_cores,out_suffix,out_dir)
   
 #> test <- combine_by_surveys(list_filenames,surveys_names,num_cores,out_suffix,out_dir)
 #Warning message:
@@ -195,5 +195,7 @@ test <- combine_by_surveys(list_filenames,surveys_names,num_cores,out_suffix,out
 #                7 function calls resulted in an error
 #> test
 #NULL
+
+survey2_df <- read.table(list_survey_df_filename[2],sep=",",header=T,check.names = F)
 
 ############################ END OF SCRIPT #####################################
