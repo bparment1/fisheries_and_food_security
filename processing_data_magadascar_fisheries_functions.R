@@ -2,7 +2,7 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 06/21/2017
+## DATE MODIFIED: 06/22/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -117,7 +117,7 @@ combine_by_id_survey<- function(i,surveys_names,list_filenames,out_suffix,out_di
 }
 
 
-combine_by_surveys<- function(list_filenames,surveys_names,num_cores,out_suffix,out_dir){
+combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_dir=T,out_suffix="",out_dir="."){
   #
   #
   #
@@ -135,9 +135,33 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,out_suffix,
     surveys_names <- grep("Error",surveys_names,invert=T,value=T)
   }
   
+  browser()
+  
+  if(combine_dir==T){
+    
+    dirname(list_filenames)
+    basename(list_filenames[1:10])
+    ### First go through all the folders/dirs
+    
+    #1. find "avy"
+    #2. find word before and after (number: 1,2 or 3)
+    #3. find month Aout, July, June 
+    #other option find the month by examining 2nd word from the end after eliminating the extension
+    
+    list_combined_df_file_ID <- strsplit(list_filenames," ")
+    list_in_dir_zip <- unique(dirname(list_filenames))
+    
+    #add identifier for combined
+    for(i in 1:in_dir_zip){
+      #if 1,2,3
+      
+    }
+    #
+    #
+  }
+  
   ##### Now loop through and bind data.frames
   #browser()
-  
   
   #debug(combine_by_id_survey)
   test_filename<- combine_by_id_survey(2,surveys_names,list_filenames,out_suffix,out_dir)
