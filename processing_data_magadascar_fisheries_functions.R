@@ -2,14 +2,14 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 06/22/2017
+## DATE MODIFIED: 07/05/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
 ## TO DO:
 ##
-## COMMIT: changes to combine survey function
+## COMMIT: functions with options to combine by column based on dir
 ##
 ## Links to investigate:
 
@@ -121,6 +121,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
   #
   #
   #
+  ### If no survey names provided then generate it from the list of files
   if(is.null(surveys_names)){
     
     list_combined_df_file_ID <- strsplit(list_filenames," ")
@@ -135,7 +136,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
     surveys_names <- grep("Error",surveys_names,invert=T,value=T)
   }
   
-  browser()
+  #browser()
   
   if(combine_dir==T){
     
@@ -151,9 +152,50 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
     list_combined_df_file_ID <- strsplit(list_filenames," ")
     list_in_dir_zip <- unique(dirname(list_filenames))
     
-    #add identifier for combined
-    for(i in 1:in_dir_zip){
+    #add identifier for combined by column
+    #
+    for(i in 1:length(list_in_dir_zip)){
+      in_dir_zip <- list_in_dir_zip[i]
       #if 1,2,3
+      list_filenames_subset <- grep(in_dir_zip,list_filenames,invert=F,value=T)
+      #keywords <- c("1", "2", "3", "avy","Aout","July","June")
+      keywords <- c("1", "2", "3", "avy")
+      English_months <- month.name
+      French_months <- c("Janvier","Fevrier","Mars","Avril","Main","Juin","Juillet","Aout",
+                         "Septembre","Octobre","Novembre","Decembre")
+      keywords_month <- c(English_months,French_months)
+      
+      df_strings <- as.data.frame(sapply(keywords, regexpr, list_filenames_subset, ignore.case=TRUE))
+      df_strings$filenames <- basename(list_filenames_subset)
+      
+      df_strings_month <- as.data.frame(sapply(keywords_month, regexpr, list_filenames_subset, ignore.case=TRUE))
+      
+      ## repeat for each row
+      get_month_val <- function(i,df_strings_month){
+        row_df <- df_strings_month[i,]
+        row_df[row_df > 0]
+        month_val <- names(row_df)[row_df > 0]
+        return(month_val)
+      }
+      month_val<- unlist(lapply(1:nrow(df_strings_month),FUN=get_month_val,df_strings_month=df_strings_month))
+      df_strings$filenames <- basename(list_filenames_subset)
+      df_strings$month_val <- month_val
+      
+      #df_strings$survey_id <- ?
+      View(df_strings)
+      
+      #concatenate survey id with month, this is the unit used to combine
+      #drop all rows without "avy"
+      
+      ### Using df_strings table
+      ### 1) Flag for avy surrounded by 1, 2, 3
+      ## 2) Find month value: can be anything from (january to december in English to Janvier to december in French)
+      ## 3) For each survey + month value, group 
+      ## 4) combined the groups
+
+      
+      surveys_names <- grep("Error",surveys_names,invert=T,value=T)
+      
       
     }
     #
