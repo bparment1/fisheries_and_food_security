@@ -2,13 +2,13 @@
 ## Importing and processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 07/05/2017
+## DATE MODIFIED: 07/10/2017
 ## AUTHORS: Benoit Parmentier 
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
 ## TO DO:
 ##
-## COMMIT: developing options to combine by column based on dir
+## COMMIT: testing options to combine by column based on dir
 ##
 ## Links to investigate:
 
@@ -59,7 +59,7 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_magadascar_fisheries_functions_07052017.R" #PARAM 1
+function_processing_data <- "processing_data_magadascar_fisheries_functions_07072017.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
 source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
@@ -72,7 +72,7 @@ out_dir <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/work
 num_cores <- 2 #param 8
 create_out_dir_param=TRUE # param 9
 
-out_suffix <-"processing_fisheries_magadascar_07052017" #output suffix for the files and ouptut folder #param 12
+out_suffix <-"processing_fisheries_magadascar_07072017" #output suffix for the files and ouptut folder #param 12
 unzip_files <- T #param 15
 
 ############## START SCRIPT ############################
@@ -229,7 +229,13 @@ suvey_names_updated <-  c("Fahasalamana",
 
 #debug(combine_by_surveys)
 #list_survey_df_filename <- combine_by_surveys(list_filenames,surveys_names=NULL,num_cores,out_suffix,out_dir)
-list_survey_df_filename <- combine_by_surveys(list_filenames,surveys_names=suvey_names_updated,num_cores,combine_by_dir=T,out_suffix,out_dir)
+list_survey_df_filename <- combine_by_surveys(list_filenames,
+                                              surveys_names=suvey_names_updated,
+                                              num_cores,
+                                              combine_by_dir=T,
+                                              out_suffix,out_dir)
+combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_dir=T,out_suffix="",out_dir=".")
+  
 
 #> test <- combine_by_surveys(list_filenames,surveys_names,num_cores,out_suffix,out_dir)
 #Warning message:
