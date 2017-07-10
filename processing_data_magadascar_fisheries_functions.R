@@ -141,6 +141,91 @@ survey_combine_by_column <- function(group_selected,df_data){
   
 }
 
+combine_by_dir_surveys_part <- function(in_dir_zip,list_filenames){
+  
+  #add identifier for combined by column
+  #
+  #for(i in 1:length(list_in_dir_zip)){
+  #in_dir_zip <- list_in_dir_zip[i]
+  #if 1,2,3
+  list_filenames_subset <- grep(in_dir_zip,list_filenames,invert=F,value=T)
+  #keywords <- c("1", "2", "3", "avy","Aout","July","June")
+  #keywords <- c("1", "2", "3", "avy")
+  
+  keywords <- c("avy")
+  English_months <- month.name
+  French_months <- c("Janvier","Fevrier","Mars","Avril","Main","Juin","Juillet","Aout",
+                     "Septembre","Octobre","Novembre","Decembre")
+  keywords_month <- c(English_months,French_months)
+  
+  df_strings <- as.data.frame(sapply(keywords, regexpr, list_filenames_subset, ignore.case=TRUE))
+  df_strings$filenames <- basename(list_filenames_subset)
+  
+  df_strings_month <- as.data.frame(sapply(keywords_month, regexpr, list_filenames_subset, ignore.case=TRUE))
+  
+  ## repeat for each row
+  
+  keywords <- surveys_names 
+  df_strings_surveys <- as.data.frame(sapply(keywords, regexpr, list_filenames_subset, ignore.case=TRUE))
+  survey_val <- unlist(lapply(1:nrow(df_strings_surveys),FUN=get_val_present,df_strings=df_strings_surveys))
+  
+  month_val<- unlist(lapply(1:nrow(df_strings_month),FUN=get_val_present,df_strings=df_strings_month))
+  df_strings$filenames <- basename(list_filenames_subset)
+  df_strings$month_val <- month_val
+  df_strings$survey_id <- survey_val
+  
+  df_strings$group_id <- paste0(df_strings$survey_id,"_",df_strings$month_val)
+  
+  #df_strings$survey_id <- ?
+  #View(df_strings)
+  
+  #concatenate survey id with month, this is the unit used to combine
+  #drop all rows without "avy"
+  dim(df_strings)
+  
+  df_strings$out_filenames <- file.path(out_dir,paste0(df_strings$group_id,"_",in_dir_zip,".csv"))
+  
+  df_strings[df_strings$avy==-1,]$out_filenames <- file.path(out_dir,in_dir_zip,df_strings[df_strings$avy==-1,]$filenames)
+  
+  #selected_files_to_combine <- df_strings[df_strings$avy>0,]
+  
+  
+  ############ Now select data to combine: only if "avy" is found in the name
+  
+  df_test <- df_strings[df_strings$avy>0,]
+  
+  dim(df_test)
+  
+  #df_test$group_id <- paste0(df_test$survey_id,"_",df_test$month_val)
+  group_val <- unique(df_test$group_id)
+  
+  #for(i in 1:length(group_val)){
+  
+  #df_test$filenames <- file.path(out_dir,in_dir_zip,df_test$filenames)  
+  #df_test$out_filenames <- file.path(out_dir,paste0(df_test$survey_id,df_test$group_id,in_dir_zip,".csv"))
+  #df_test$out_filenames <- file.path(out_dir,paste0(df_test$group_id,"_",in_dir_zip,".csv"))
+  
+  list_df_col_combined <- survey_combine_by_column(group_val,df_data=df_test)
+  
+  list_df_col_combined <- lapply(group_val,FUN= survey_combine_by_column,df_data=df_test)
+  names(list_df_col_combined)<- group_val
+  
+  
+  ### Using df_strings table
+  ### 1) Flag for avy surrounded by 1, 2, 3
+  ## 2) Find month value: can be anything from (january to december in English to Janvier to december in French)
+  ## 3) For each survey + month value, group 
+  ## 4) combined the groups
+  df_strings$group_id <- paste0(df_test$survey_id,"_",df_test$month_val)
+  
+  list_filenames2 <- unique(df_strings$out_filenames)
+  
+  return(list_filenames2)
+}
+
+
+### THis is the main function using all others above
+
 combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_dir=T,out_suffix="",out_dir="."){
   #
   #
@@ -176,86 +261,11 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
     list_combined_df_file_ID <- strsplit(list_filenames," ")
     list_in_dir_zip <- unique(dirname(list_filenames))
     
-    #add identifier for combined by column
-    #
-    for(i in 1:length(list_in_dir_zip)){
-      in_dir_zip <- list_in_dir_zip[i]
-      #if 1,2,3
-      list_filenames_subset <- grep(in_dir_zip,list_filenames,invert=F,value=T)
-      #keywords <- c("1", "2", "3", "avy","Aout","July","June")
-      #keywords <- c("1", "2", "3", "avy")
-      
-      keywords <- c("avy")
-      English_months <- month.name
-      French_months <- c("Janvier","Fevrier","Mars","Avril","Main","Juin","Juillet","Aout",
-                         "Septembre","Octobre","Novembre","Decembre")
-      keywords_month <- c(English_months,French_months)
-      
-      df_strings <- as.data.frame(sapply(keywords, regexpr, list_filenames_subset, ignore.case=TRUE))
-      df_strings$filenames <- basename(list_filenames_subset)
-      
-      df_strings_month <- as.data.frame(sapply(keywords_month, regexpr, list_filenames_subset, ignore.case=TRUE))
-      
-      ## repeat for each row
+    debug(combine_by_dir_surveys_part)
+    test_filenames2 <- combine_by_dir_surveys_part(list_in_dir_zip[1],list_filenames=list_filenames)
+    
+    list_filenames2 <- lapply(list_in_dir_zip,FUN=combine_by_dir_surveys_part,list_filenames=list_filenames)
 
-      keywords <- surveys_names 
-      df_strings_surveys <- as.data.frame(sapply(keywords, regexpr, list_filenames_subset, ignore.case=TRUE))
-      survey_val <- unlist(lapply(1:nrow(df_strings_surveys),FUN=get_val_present,df_strings=df_strings_surveys))
-      
-      month_val<- unlist(lapply(1:nrow(df_strings_month),FUN=get_val_present,df_strings=df_strings_month))
-      df_strings$filenames <- basename(list_filenames_subset)
-      df_strings$month_val <- month_val
-      df_strings$survey_id <- survey_val
-      
-      df_strings$group_id <- paste0(df_strings$survey_id,"_",df_strings$month_val)
-      
-      
-      #df_strings$survey_id <- ?
-      View(df_strings)
-      
-      #concatenate survey id with month, this is the unit used to combine
-      #drop all rows without "avy"
-      dim(df_strings)
-      
-      df_strings$out_filenames <- file.path(out_dir,paste0(df_strings$group_id,"_",in_dir_zip,".csv"))
-      
-      df_strings[df_strings$avy==-1,]$out_filenames <- file.path(out_dir,in_dir_zip,df_strings[df_strings$avy==-1,]$filenames)
-      
-      #selected_files_to_combine <- df_strings[df_strings$avy>0,]
-      
-      
-      
-      ############ Now select data to combine: only if "avy" is found in the name
-      
-      df_test <- df_strings[df_strings$avy>0,]
-      
-      dim(df_test)
-      
-      df_test$group_id <- paste0(df_test$survey_id,"_",df_test$month_val)
-      group_val <- unique(df_test$group_id)
-      
-      #for(i in 1:length(group_val)){
-        
-      df_test$filenames <- file.path(out_dir,in_dir_zip,df_test$filenames)  
-      df_test$out_filenames <- file.path(out_dir,paste0(df_test$survey_id,df_test$group_id,in_dir_zip,".csv"))
-      df_test$out_filenames <- file.path(out_dir,paste0(df_test$group_id,"_",in_dir_zip,".csv"))
-      
-      
-      list_df_col_combined <- lapply(group_val,FUN= survey_combine_by_column,df_data=df_test)
-      names(list_df_col_combined)<- group_val
-      
-      
-      ### Using df_strings table
-      ### 1) Flag for avy surrounded by 1, 2, 3
-      ## 2) Find month value: can be anything from (january to december in English to Janvier to december in French)
-      ## 3) For each survey + month value, group 
-      ## 4) combined the groups
-      df_strings$group_id <- paste0(df_test$survey_id,"_",df_test$month_val)
-      
-      
-      
-
-    }
     #
     #Now remove filenames that have been cbind
     
@@ -270,7 +280,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
   #browser()
   
   #debug(combine_by_id_survey)
-  test_filename<- combine_by_id_survey(2,surveys_names,list_filenames,out_suffix,out_dir)
+  test_filename<- combine_by_id_survey(2,surveys_names,list_filenames2,out_suffix,out_dir)
   #test_df <- read.table(test_filename,sep=",",header=T,check.names = F)
   # Start writing to an output file
   if(file.exists("warnings_messages.txt")){
@@ -284,7 +294,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
   list_survey_df <- mclapply(1:length(surveys_names),
                              FUN=combine_by_id_survey,
                              surveys_names = surveys_names,
-                             list_filenames=list_filenames,
+                             list_filenames=list_filenames2,
                              out_suffix=out_suffix,
                              out_dir=out_dir,
                              mc.preschedule = F,
