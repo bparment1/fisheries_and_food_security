@@ -123,6 +123,24 @@ get_val_present <- function(i,df_strings){
   return(val_present)
 }
 
+survey_combine_by_column <- function(group_selected,df_data){
+  #Combine survey by column
+  #d
+  
+  #group_selected <- group_val[j]
+  
+  df_subset <- subset(df_test,df_test$group_id==group_selected)
+  
+  df_subset <- df_subset[with(df_subset, order(filenames)), ]
+  list_df <-lapply(df_subset$filenames,FUN=function(x){read.table(x,sep=";",header=T)})
+  df_subset_combined <- do.call(cbind.fill,list_df)
+  #df_subset_combined <- do.call(rbind.fill,list_df)
+  
+  #cbind each of df_subset
+  return(df_subset_combined)
+  
+}
+
 combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_dir=T,out_suffix="",out_dir="."){
   #
   #
@@ -144,7 +162,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
   
   #browser()
   
-  if(combine_dir==T){
+  if(combine_by_dir==T){
     
     #dirname(list_filenames)
     #basename(list_filenames[1:10])
@@ -188,13 +206,29 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
       df_strings$filenames <- basename(list_filenames_subset)
       df_strings$month_val <- month_val
       df_strings$survey_id <- survey_val
+      
+      df_strings$group_id <- paste0(df_strings$survey_id,"_",df_strings$month_val)
+      
+      
       #df_strings$survey_id <- ?
       View(df_strings)
       
       #concatenate survey id with month, this is the unit used to combine
       #drop all rows without "avy"
       dim(df_strings)
+      
+      df_strings$out_filenames <- file.path(out_dir,paste0(df_strings$group_id,"_",in_dir_zip,".csv"))
+      
+      df_strings[df_strings$avy==-1,]$out_filenames <- file.path(out_dir,in_dir_zip,df_strings[df_strings$avy==-1,]$filenames)
+      
+      #selected_files_to_combine <- df_strings[df_strings$avy>0,]
+      
+      
+      
+      ############ Now select data to combine: only if "avy" is found in the name
+      
       df_test <- df_strings[df_strings$avy>0,]
+      
       dim(df_test)
       
       df_test$group_id <- paste0(df_test$survey_id,"_",df_test$month_val)
@@ -203,36 +237,35 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
       #for(i in 1:length(group_val)){
         
       df_test$filenames <- file.path(out_dir,in_dir_zip,df_test$filenames)  
-      survey_combine_by_column <- function(group_selected,df_data)  
-        #group_selected <- group_val[j]
-        
-        df_subset <- subset(df_test,df_test$group_id==group_selected)
-        #cbind(...) #based on 1,2,3
-        #splitted_filenames <- strsplit(df_subset$filenames," ")
-        #df_splitted <- as.data.frame(do.call(rbind,splitted_filenames))
-        #df_subset <- cbind(df_subset,df_splitted )
-        #grep(df_test$filenames,"avy",)
-        #df_subset <- sort(df_subset$filenames)
-        #y <- df_subset
-        #y <- y[with(y, order(filenames)), ]
-        df_subset <- df_subset[with(df_subset, order(filenames)), ]
-        lapply(df_subset$filenames,function(x){read.table(x)})
-        #cbind each of df_subset
-        return(df_subset)
-        
-      }
+      df_test$out_filenames <- file.path(out_dir,paste0(df_test$survey_id,df_test$group_id,in_dir_zip,".csv"))
+      df_test$out_filenames <- file.path(out_dir,paste0(df_test$group_id,"_",in_dir_zip,".csv"))
+      
+      
+      list_df_col_combined <- lapply(group_val,FUN= survey_combine_by_column,df_data=df_test)
+      names(list_df_col_combined)<- group_val
+      
+      
       ### Using df_strings table
       ### 1) Flag for avy surrounded by 1, 2, 3
       ## 2) Find month value: can be anything from (january to december in English to Janvier to december in French)
       ## 3) For each survey + month value, group 
       ## 4) combined the groups
-
+      df_strings$group_id <- paste0(df_test$survey_id,"_",df_test$month_val)
+      
+      
+      
 
     }
     #
+    #Now remove filenames that have been cbind
+    
     #
+  }else{
+    list_filenames2 <- list_filenames
   }
-  
+  ### Need to update list file names!!!
+    
+    
   ##### Now loop through and bind data.frames
   #browser()
   
