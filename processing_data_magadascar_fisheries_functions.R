@@ -2,7 +2,7 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 07/07/2017
+## DATE MODIFIED: 07/25/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -95,6 +95,14 @@ combine_by_id_survey<- function(i,surveys_names,list_filenames,out_suffix,out_di
   
   ###
   list_df <- lapply(list_lf,read_file_feed2go) # use default option
+  #debug(read_file_feed2go)
+  list_df <- read_file_feed2go(list_lf[1]) # use default option
+  
+  list_df <- mclapply(list_lf,
+                      read_file_feed2go,
+                      mc.preschedule = FALSE,
+                      mc.cores = num_cores) # use default option
+  
   lapply(list_df,function(x){inherits(x,"try-error")})
   #sum(unlist(lapply(list_df,function(x){inherits(x,"try-error")})))
   #0 #this means no try-error
@@ -123,21 +131,21 @@ get_val_present <- function(i,df_strings){
   return(val_present)
 }
 
-survey_combine_by_column <- function(group_selected,df_data){
+survey_combine_by_column <- function(out_filenames_selected,df_data){
   #Combine survey by column
   #d
   
   #group_selected <- group_val[j]
   
-  df_subset <- subset(df_test,df_test$group_id==group_selected)
+  df_subset <- subset(df_data,df_data$out_filenames==out_filenames_selected)
   
   df_subset <- df_subset[with(df_subset, order(filenames)), ]
   list_df <-lapply(df_subset$filenames,FUN=function(x){read.table(x,sep=";",header=T)})
   df_subset_combined <- do.call(cbind.fill,list_df)
   #df_subset_combined <- do.call(rbind.fill,list_df)
-  
+  write.table(df_subset_combined,out_filenames_selected,sep=";")
   #cbind each of df_subset
-  return(df_subset_combined)
+  return(out_filenames_selected)
   
 }
 
@@ -193,31 +201,31 @@ combine_by_dir_surveys_part <- function(in_dir_zip,list_filenames){
   ############ Now select data to combine: only if "avy" is found in the name
   
   df_test <- df_strings[df_strings$avy>0,]
+  df_test$filenames <- file.path(out_dir,in_dir_zip,df_test$filenames)
   
   dim(df_test)
   
   #df_test$group_id <- paste0(df_test$survey_id,"_",df_test$month_val)
   group_val <- unique(df_test$group_id)
-  
+  list_out_filenames <- unique(df_test$out_filenames)
   #for(i in 1:length(group_val)){
   
   #df_test$filenames <- file.path(out_dir,in_dir_zip,df_test$filenames)  
   #df_test$out_filenames <- file.path(out_dir,paste0(df_test$survey_id,df_test$group_id,in_dir_zip,".csv"))
   #df_test$out_filenames <- file.path(out_dir,paste0(df_test$group_id,"_",in_dir_zip,".csv"))
   
-  list_df_col_combined <- survey_combine_by_column(group_val,df_data=df_test)
+  #undebug(survey_combine_by_column)
+  list_df_col_combined <- survey_combine_by_column(list_out_filenames[1],df_data=df_test)
   
   list_df_col_combined <- lapply(group_val,FUN= survey_combine_by_column,df_data=df_test)
-  names(list_df_col_combined)<- group_val
-  
+  names(list_df_col_combined)<- list_out_filenames
   
   ### Using df_strings table
   ### 1) Flag for avy surrounded by 1, 2, 3
   ## 2) Find month value: can be anything from (january to december in English to Janvier to december in French)
   ## 3) For each survey + month value, group 
   ## 4) combined the groups
-  df_strings$group_id <- paste0(df_test$survey_id,"_",df_test$month_val)
-  
+
   list_filenames2 <- unique(df_strings$out_filenames)
   
   return(list_filenames2)
@@ -261,14 +269,19 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
     list_combined_df_file_ID <- strsplit(list_filenames," ")
     list_in_dir_zip <- unique(dirname(list_filenames))
     
-    debug(combine_by_dir_surveys_part)
+    #debug(combine_by_dir_surveys_part)
+    browser()
     test_filenames2 <- combine_by_dir_surveys_part(list_in_dir_zip[1],list_filenames=list_filenames)
     
-    list_filenames2 <- lapply(list_in_dir_zip,FUN=combine_by_dir_surveys_part,list_filenames=list_filenames)
+    list_filenames2 <- mclapply(list_in_dir_zip,
+                                FUN=combine_by_dir_surveys_part,
+                                list_filenames=list_filenames,
+                                mc.preschedule = FALSE,
+                                mc.cores = num_cores)
 
     #
     #Now remove filenames that have been cbind
-    
+    list_filenames2 <- unlist(list_filenames2)
     #
   }else{
     list_filenames2 <- list_filenames
