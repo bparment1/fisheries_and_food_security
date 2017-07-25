@@ -32,7 +32,9 @@ library(spgwr)                               # GWR method
 library(rgeos)                               # Geometric, topologic library of functions
 library(gridExtra)                           # Combining lattice plots
 library(colorRamps)                          # Palette/color ramps for symbology
-library(ggplot2)
+library(ggplot2)                             # Plotting package using grammar of graphics
+library(rowr)                                # Contains cbind.fill
+
 
 ###### Functions used in this script sourced from other files
 
@@ -89,9 +91,10 @@ combine_by_id_survey<- function(i,surveys_names,list_filenames,out_suffix,out_di
   #
   #
   
-  list_lf <- grep(surveys_names[i],list_filenames,value=T)
+  list_lf <- grep(surveys_names[i], list_filenames,value=T)
   list_dir <- test_dim_df$zip_file[grep(surveys_names[i],list_filenames,value=F)]
-  list_lf <- file.path(out_dir,list_dir,list_lf)
+  ##change on 07/27 double path...
+  #list_lf <- file.path(out_dir,list_dir,list_lf)
   
   ###
   list_df <- lapply(list_lf,read_file_feed2go) # use default option
@@ -141,6 +144,8 @@ survey_combine_by_column <- function(out_filenames_selected,df_data){
   
   df_subset <- df_subset[with(df_subset, order(filenames)), ]
   list_df <-lapply(df_subset$filenames,FUN=function(x){read.table(x,sep=";",header=T)})
+  
+  
   df_subset_combined <- do.call(cbind.fill,list_df)
   #df_subset_combined <- do.call(rbind.fill,list_df)
   write.table(df_subset_combined,out_filenames_selected,sep=";")
@@ -149,7 +154,7 @@ survey_combine_by_column <- function(out_filenames_selected,df_data){
   
 }
 
-combine_by_dir_surveys_part <- function(in_dir_zip,list_filenames){
+combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames){
   
   #add identifier for combined by column
   #
@@ -269,18 +274,23 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
     list_combined_df_file_ID <- strsplit(list_filenames," ")
     list_in_dir_zip <- unique(dirname(list_filenames))
     
-    #debug(combine_by_dir_surveys_part)
-    browser()
-    test_filenames2 <- combine_by_dir_surveys_part(list_in_dir_zip[1],list_filenames=list_filenames)
+    #undebug(combine_by_dir_surveys_part)
+    #browser()
+    
+    test_filenames2 <- combine_by_dir_surveys_part(list_in_dir_zip[1],
+                                                   surveys_names = surveys_names,
+                                                   list_filenames=list_filenames)
     
     list_filenames2 <- mclapply(list_in_dir_zip,
                                 FUN=combine_by_dir_surveys_part,
+                                surveys_names = surveys_names,
                                 list_filenames=list_filenames,
                                 mc.preschedule = FALSE,
                                 mc.cores = num_cores)
 
-    #
+    
     #Now remove filenames that have been cbind
+    #tt <- unlist(list_filenames2)
     list_filenames2 <- unlist(list_filenames2)
     #
   }else{
@@ -292,8 +302,10 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
   ##### Now loop through and bind data.frames
   #browser()
   
-  #debug(combine_by_id_survey)
-  test_filename<- combine_by_id_survey(2,surveys_names,list_filenames2,out_suffix,out_dir)
+  #undebug(combine_by_id_survey)
+  #test_filename<- combine_by_id_survey(2,surveys_names,list_filenames2,out_suffix,out_dir)
+  test_filename <- combine_by_id_survey(5,surveys_names,list_filenames2,out_suffix,out_dir)
+  
   #test_df <- read.table(test_filename,sep=",",header=T,check.names = F)
   # Start writing to an output file
   if(file.exists("warnings_messages.txt")){
