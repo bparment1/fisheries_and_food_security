@@ -2,7 +2,7 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 07/25/2017
+## DATE MODIFIED: 07/27/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -90,9 +90,30 @@ dim_surveys_df <- function(list_df){
 combine_by_id_survey<- function(i,surveys_names,list_filenames,out_suffix,out_dir){
   #
   #
+  #ls -ltr *processing*.txt | wc
+  #
+  #bparmentier@bps:~/z_drive/Data/projects/Fisheries_and_food_security/workflow_preprocessing/outputs/output_processing_fisheries_magadascar_07272017$ ls -ltr *processing*.txt
+  #-rwxrwxrwx 1 root root     7667 Jul 27 15:08 df_zip_processing_fisheries_magadascar_07272017.txt
+  #-rwxrwxrwx 1 root root   102511 Jul 27 15:10 summary_table_df_processing_fisheries_magadascar_07272017.txt
+  #-rwxrwxrwx 1 root root  2176599 Jul 27 15:22 Fahasalamana isanbolana_processing_fisheries_magadascar_07272017.txt
+  #-rwxrwxrwx 1 root root  4163531 Jul 27 15:22 Fahasalamana_processing_fisheries_magadascar_07272017.txt
+  #-rwxrwxrwx 1 root root 17387318 Jul 27 15:23 Karazan-tsakafo_processing_fisheries_magadascar_07272017.txt
+  #-rwxrwxrwx 1 root root 15948162 Jul 27 15:23 Laoko_processing_fisheries_magadascar_07272017.txt
+  #-rwxrwxrwx 1 root root  2754119 Jul 27 15:23 Mpanjono_processing_fisheries_magadascar_07272017.txt
+  #-rwxrwxrwx 1 root root  1883697 Jul 27 15:30 Vola isambolana_processing_fisheries_magadascar_07272017.txt
+  #-rwxrwxrwx 1 root root  4763121 Jul 27 15:38 Measure Sakafo_processing_fisheries_magadascar_07272017.txt
   
-  list_lf <- grep(surveys_names[i], list_filenames,value=T)
-  list_dir <- test_dim_df$zip_file[grep(surveys_names[i],list_filenames,value=F)]
+  #
+  #
+  
+  survey_selected <- surveys_names[i]
+  #"Fahasalamana isanbolana", there is a matching problem 
+  #survey_selected <- "Fahasalamana_isanbolana"
+  #survey_selected <- "Fahasalamana_isanbolana"
+  
+  list_lf <- grep(survey_selected, list_filenames,value=T)
+  list_lf <- grep(survey_selected,list_filenames_original,value=T)
+  list_dir <- test_dim_df$zip_file[grep(survey_selected,list_filenames,value=F)]
   ##change on 07/27 double path...
   #list_lf <- file.path(out_dir,list_dir,list_lf)
   
@@ -187,7 +208,8 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   df_strings$month_val <- month_val
   df_strings$survey_id <- survey_val
   
-  df_strings$group_id <- paste0(df_strings$survey_id,"_",df_strings$month_val)
+  ##Not using "_" to see if we can resolve the issue of indentification of survey names
+  df_strings$group_id <- paste0(df_strings$survey_id," ",df_strings$month_val)
   
   #df_strings$survey_id <- ?
   #View(df_strings)
@@ -220,7 +242,7 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   #df_test$out_filenames <- file.path(out_dir,paste0(df_test$group_id,"_",in_dir_zip,".csv"))
   
   #undebug(survey_combine_by_column)
-  list_df_col_combined <- survey_combine_by_column(list_out_filenames[1],df_data=df_test)
+  #list_df_col_combined <- survey_combine_by_column(list_out_filenames[1],df_data=df_test)
   
   list_df_col_combined <- lapply(group_val,FUN= survey_combine_by_column,df_data=df_test)
   names(list_df_col_combined)<- list_out_filenames
@@ -258,7 +280,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
     surveys_names <- grep("Error",surveys_names,invert=T,value=T)
   }
   
-  #browser()
+  browser()
   
   if(combine_by_dir==T){
     
@@ -294,17 +316,19 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
     list_filenames2 <- unlist(list_filenames2)
     #
   }else{
-    list_filenames2 <- list_filenames
+    #list_filenames2 <- list_filenames
+    #list_lf <- file.path(out_dir,list_dir,list_lf)
+    list_filenames2 <- file.path(out_dir,list_filenames)
   }
   ### Need to update list file names!!!
     
-    
   ##### Now loop through and bind data.frames
-  #browser()
+  browser()
   
   #undebug(combine_by_id_survey)
+  ## Suvey_names 2 does not work: need to check when using option combine by dir
   #test_filename<- combine_by_id_survey(2,surveys_names,list_filenames2,out_suffix,out_dir)
-  test_filename <- combine_by_id_survey(5,surveys_names,list_filenames2,out_suffix,out_dir)
+  test_filename <- combine_by_id_survey(6,surveys_names,list_filenames2,out_suffix,out_dir)
   
   #test_df <- read.table(test_filename,sep=",",header=T,check.names = F)
   # Start writing to an output file
