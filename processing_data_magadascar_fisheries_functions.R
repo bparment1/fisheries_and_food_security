@@ -2,19 +2,31 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 07/27/2017
+## DATE MODIFIED: 07/28/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
 ## TO DO:
 ##
-## COMMIT: testing options to combine by column based on in_dir, survey id and month
+## COMMIT: adding documentationa and testing changes related 
 ##
 ## Links to investigate:
 
 ###################################################
 #
+#Function in this script:
+
+#[1] "combine_by_dir_surveys_part" 
+#[2] "combine_by_id_survey" : helper, carries out the process of combining by row table using survey name      
+#[3] "combine_by_surveys" : main function to generate data.frame by survey name          
+#[4] "dim_surveys_df": helper, extracts dimension of data.frames for metadata info             
+#[5] "extract_date_feed2go": helper function, extracts dates from feed2go file names        
+#[6] "get_val_present": find if values/keywords are present in strings (file names): e.g. "avy"              
+#[7] "read_file_feed2go": reading in raw files from feed2go, note the ";" separator          
+#[8] "summary_data_table" : generate summary of data collected for the survey (over >200)         
+#[9] "survey_combine_by_column": helper function, carries out the process of combining by column using group_id   
+
 
 ###### Library used
 
@@ -40,6 +52,9 @@ library(rowr)                                # Contains cbind.fill
 
 
 extract_date_feed2go <- function(string_val){
+  
+  #### Extract dates from feed2go files
+  
   list_str <- strsplit(string_val,"_"); 
   date_val <- list_str[[1]][3]
   #substr(x, start, stop)
@@ -65,6 +80,11 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
 
 summary_data_table <- function(list_lf){
   
+  ### This function lists all input files from the Magadascar suvey and generate tables of summary.
+  
+  
+  ##### Begin script #####
+  
   #list_df <- lapply(list_lf_r[[1]],read_file_feed2go,out_dir)
   list_df <- lapply(list_lf,read_file_feed2go,out_dir)
   #lapply(list_df,summary_table_df)
@@ -80,31 +100,22 @@ summary_data_table <- function(list_lf){
 }
 
 dim_surveys_df <- function(list_df){
+  #Generate dimension of list of data.frame
+  #This is useful metadata to summarize data table collected during the survey
   #
+  
   dim_df<- (lapply(list_df,function(x){data.frame(nrow=dim(x)[1],ncol=dim(x)[2])}))
   dim_df <- do.call(rbind,dim_df)
   #View(dim_df)
   return(dim_df)
 }
 
-combine_by_id_survey<- function(i,surveys_names,list_filenames,out_suffix,out_dir){
+combine_by_id_survey<- function(i,surveys_names,list_filenames,num_cores,out_suffix,out_dir){
+  # This function combines input files based on survey names id
   #
   #
-  #ls -ltr *processing*.txt | wc
-  #
-  #bparmentier@bps:~/z_drive/Data/projects/Fisheries_and_food_security/workflow_preprocessing/outputs/output_processing_fisheries_magadascar_07272017$ ls -ltr *processing*.txt
-  #-rwxrwxrwx 1 root root     7667 Jul 27 15:08 df_zip_processing_fisheries_magadascar_07272017.txt
-  #-rwxrwxrwx 1 root root   102511 Jul 27 15:10 summary_table_df_processing_fisheries_magadascar_07272017.txt
-  #-rwxrwxrwx 1 root root  2176599 Jul 27 15:22 Fahasalamana isanbolana_processing_fisheries_magadascar_07272017.txt
-  #-rwxrwxrwx 1 root root  4163531 Jul 27 15:22 Fahasalamana_processing_fisheries_magadascar_07272017.txt
-  #-rwxrwxrwx 1 root root 17387318 Jul 27 15:23 Karazan-tsakafo_processing_fisheries_magadascar_07272017.txt
-  #-rwxrwxrwx 1 root root 15948162 Jul 27 15:23 Laoko_processing_fisheries_magadascar_07272017.txt
-  #-rwxrwxrwx 1 root root  2754119 Jul 27 15:23 Mpanjono_processing_fisheries_magadascar_07272017.txt
-  #-rwxrwxrwx 1 root root  1883697 Jul 27 15:30 Vola isambolana_processing_fisheries_magadascar_07272017.txt
-  #-rwxrwxrwx 1 root root  4763121 Jul 27 15:38 Measure Sakafo_processing_fisheries_magadascar_07272017.txt
   
-  #
-  #
+  #### Beging script #####
   
   survey_selected <- surveys_names[i]
   #"Fahasalamana isanbolana", there is a matching problem 
@@ -156,90 +167,107 @@ get_val_present <- function(i,df_strings){
 }
 
 survey_combine_by_column <- function(out_filenames_selected,df_data){
-  #Combine survey by column
-  #d
+  #Combine survey by column based on list of files defined in data.frame
+  #
   
-  #group_selected <- group_val[j]
+  ###### Begin script ####
   
   df_subset <- subset(df_data,df_data$out_filenames==out_filenames_selected)
   
   df_subset <- df_subset[with(df_subset, order(filenames)), ]
   list_df <-lapply(df_subset$filenames,FUN=function(x){read.table(x,sep=";",header=T)})
   
-  
-  df_subset_combined <- do.call(cbind.fill,list_df)
+  df_subset_combined <- do.call(cbind.fill,list_df) # Note that cbind.fill is found in rowr package
   #df_subset_combined <- do.call(rbind.fill,list_df)
   write.table(df_subset_combined,out_filenames_selected,sep=";")
-  #cbind each of df_subset
+  
   return(out_filenames_selected)
   
 }
 
 combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames){
+  # This functions combines files of surveys using survey names, common dir and date information.
+  # The first step is to identify for each directory:
+  # 1) the existence of multiple parts for each month and survey - this is done by identifying the presence of "avy" 
+  #    and months in French or English
+  # 2) Grouping files by survey names, common dates and common directory
+  # 3) Binding by column (wide format) the information
+  # 4) return the list of files were combine by column for further processing
   
-  #add identifier for combined by column
-  #
-  #for(i in 1:length(list_in_dir_zip)){
-  #in_dir_zip <- list_in_dir_zip[i]
-  #if 1,2,3
+  ##### INPUTS
+  # 1) in_dir_zip: input directory used to group files to combine
+  # 2) surveys_names: survey id keywords used in the combine process
+  # 3) list_filenames: input file names from survey app
+  ##### OUTPUTS
+  # 1) list_filenames2: output file name combined by survey names and parts "avy" as well as months
+  
+  ###### Begin script ##########
+  
+  ###############
+  ### Step 1:  Subset relevant columns
+  
   list_filenames_subset <- grep(in_dir_zip,list_filenames,invert=F,value=T)
-  #keywords <- c("1", "2", "3", "avy","Aout","July","June")
-  #keywords <- c("1", "2", "3", "avy")
-  
+
+  ## Find the presence of keyword "avy" which signal the present of mulitple parts in surveys
   keywords <- c("avy")
+  
+  ## Find the presence of multiple month names to group parts by unique months (names may be in French or English)
   English_months <- month.name
   French_months <- c("Janvier","Fevrier","Mars","Avril","Main","Juin","Juillet","Aout",
                      "Septembre","Octobre","Novembre","Decembre")
   keywords_month <- c(English_months,French_months)
   
+  ##############
+  ###  Step 2: Generate data.frame with combination  "avy" keywords from list of file names from the survey app
   df_strings <- as.data.frame(sapply(keywords, regexpr, list_filenames_subset, ignore.case=TRUE))
   df_strings$filenames <- basename(list_filenames_subset)
   
+  ##############
+  ### Step 3: data.frame with combination months keywords from list of file names from the survey app
   df_strings_month <- as.data.frame(sapply(keywords_month, regexpr, list_filenames_subset, ignore.case=TRUE))
   
-  ## repeat for each row
+  #############
+  ### Step 4: data.frame with combination survey_name keywords from list of file names from the survey app
   
   keywords <- surveys_names 
   df_strings_surveys <- as.data.frame(sapply(keywords, regexpr, list_filenames_subset, ignore.case=TRUE))
-  survey_val <- unlist(lapply(1:nrow(df_strings_surveys),FUN=get_val_present,df_strings=df_strings_surveys))
   
+  #############
+  ### Step 5: Combine data.frame keywords in a common data.frame "df_strings"
+  
+  survey_val <- unlist(lapply(1:nrow(df_strings_surveys),FUN=get_val_present,df_strings=df_strings_surveys))
   month_val<- unlist(lapply(1:nrow(df_strings_month),FUN=get_val_present,df_strings=df_strings_month))
+  
+  #### Add month and survey info to df_strings
+  
   df_strings$filenames <- basename(list_filenames_subset)
   df_strings$month_val <- month_val
   df_strings$survey_id <- survey_val
   
+  ##############
+  ### Step 6: Generate group_id used to combine files by columns
+  
   ##Not using "_" to see if we can resolve the issue of indentification of survey names
   df_strings$group_id <- paste0(df_strings$survey_id," ",df_strings$month_val)
   
-  #df_strings$survey_id <- ?
-  #View(df_strings)
-  
   #concatenate survey id with month, this is the unit used to combine
   #drop all rows without "avy"
-  dim(df_strings)
-  
+
   df_strings$out_filenames <- file.path(out_dir,paste0(df_strings$group_id,"_",in_dir_zip,".csv"))
   
   df_strings[df_strings$avy==-1,]$out_filenames <- file.path(out_dir,in_dir_zip,df_strings[df_strings$avy==-1,]$filenames)
   
-  #selected_files_to_combine <- df_strings[df_strings$avy>0,]
-  
-  
-  ############ Now select data to combine: only if "avy" is found in the name
+  ################
+  #### Step 7: Select data to combine: only if "avy" is found in the name
   
   df_test <- df_strings[df_strings$avy>0,]
   df_test$filenames <- file.path(out_dir,in_dir_zip,df_test$filenames)
   
-  dim(df_test)
-  
-  #df_test$group_id <- paste0(df_test$survey_id,"_",df_test$month_val)
   group_val <- unique(df_test$group_id)
   list_out_filenames <- unique(df_test$out_filenames)
-  #for(i in 1:length(group_val)){
-  
-  #df_test$filenames <- file.path(out_dir,in_dir_zip,df_test$filenames)  
-  #df_test$out_filenames <- file.path(out_dir,paste0(df_test$survey_id,df_test$group_id,in_dir_zip,".csv"))
-  #df_test$out_filenames <- file.path(out_dir,paste0(df_test$group_id,"_",in_dir_zip,".csv"))
+
+  ################
+  #### Step 8: Combine files by group id
   
   #undebug(survey_combine_by_column)
   #list_df_col_combined <- survey_combine_by_column(list_out_filenames[1],df_data=df_test)
@@ -247,12 +275,6 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   list_df_col_combined <- lapply(group_val,FUN= survey_combine_by_column,df_data=df_test)
   names(list_df_col_combined)<- list_out_filenames
   
-  ### Using df_strings table
-  ### 1) Flag for avy surrounded by 1, 2, 3
-  ## 2) Find month value: can be anything from (january to december in English to Janvier to december in French)
-  ## 3) For each survey + month value, group 
-  ## 4) combined the groups
-
   list_filenames2 <- unique(df_strings$out_filenames)
   
   return(list_filenames2)
@@ -262,9 +284,21 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
 ### THis is the main function using all others above
 
 combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_dir=T,out_suffix="",out_dir="."){
+  # This functions combines data based on the survey names. 
+  # Data is combined by row using input files.
   #
-  #
-  #
+  ##### INPUTS
+  # 1) in_dir_zip: input directory used to group files to combine
+  # 2) surveys_names: survey id keywords used in the combine process
+  # 3) list_filenames: input file names from survey app
+  ##### OUTPUTS
+  # 1) list_filenames2: output file name combined by survey names and parts "avy" as well as months
+  
+  ####### Begin script ##########
+  
+  ##########
+  ## Step 1
+  
   ### If no survey names provided then generate it from the list of files
   if(is.null(surveys_names)){
     
@@ -280,7 +314,10 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
     surveys_names <- grep("Error",surveys_names,invert=T,value=T)
   }
   
-  browser()
+  ##########
+  ## Step 2
+  
+  #browser()
   
   if(combine_by_dir==T){
     
@@ -320,15 +357,17 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
     #list_lf <- file.path(out_dir,list_dir,list_lf)
     list_filenames2 <- file.path(out_dir,list_filenames)
   }
-  ### Need to update list file names!!!
-    
+  
+  ###########
+  ### Step 3
+  
   ##### Now loop through and bind data.frames
-  browser()
+  #browser()
   
   #undebug(combine_by_id_survey)
   ## Suvey_names 2 does not work: need to check when using option combine by dir
   #test_filename<- combine_by_id_survey(2,surveys_names,list_filenames2,out_suffix,out_dir)
-  test_filename <- combine_by_id_survey(6,surveys_names,list_filenames2,out_suffix,out_dir)
+  test_filename <- combine_by_id_survey(6,surveys_names,list_filenames2,num_cores,out_suffix,out_dir)
   
   #test_df <- read.table(test_filename,sep=",",header=T,check.names = F)
   # Start writing to an output file
@@ -353,8 +392,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
   #test_df <- read.table(test_filename,sep=",",header=T,check.names = F)
   list_survey_df <- file.path(out_dir,unlist(list_survey_df))
   
-  #### prepare obj
-  
+  #### prepare return obj
 
   return(list_survey_df)
 }
