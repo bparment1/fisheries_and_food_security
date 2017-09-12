@@ -110,7 +110,7 @@ dim_surveys_df <- function(list_df){
   return(dim_df)
 }
 
-combine_by_id_survey<- function(i,surveys_names,list_filenames,num_cores,out_suffix,out_dir){
+combine_by_id_survey<- function(i,surveys_names,list_filenames,num_cores=1,out_suffix="",out_dir="."){
   # This function combines input files based on survey names id
   #
   #
@@ -129,20 +129,28 @@ combine_by_id_survey<- function(i,surveys_names,list_filenames,num_cores,out_suf
   #list_lf <- file.path(out_dir,list_dir,list_lf)
   
   ###
-  list_df <- lapply(list_lf,read_file_feed2go) # use default option
+  #list_df <- lapply(list_lf,read_file_feed2go) # use default option
   #debug(read_file_feed2go)
-  list_df <- read_file_feed2go(list_lf[1]) # use default option
+  #list_df <- read_file_feed2go(list_lf[1]) # use default option
   
   list_df <- mclapply(list_lf,
                       read_file_feed2go,
                       mc.preschedule = FALSE,
                       mc.cores = num_cores) # use default option
   
-  lapply(list_df,function(x){inherits(x,"try-error")})
+  test_error <- lapply(list_df,function(x){inherits(x,"try-error")})
   #sum(unlist(lapply(list_df,function(x){inherits(x,"try-error")})))
   #0 #this means no try-error
   
+  dim_list_df <-lapply(list_df,FUN=function(x){dim(x)})
+  dim_df <- as.data.frame(do.call(rbind,dim_list_df))
+  range(dim_df$V2,na.rm = T)  
+  histogram(dim_df$V2)
+  View(dim_df)
+  
   df_survey <- do.call(rbind.fill,list_df)
+
+  
   #for(list_I)
   ### Note there could be replicated information!!!, screen for identical rows later on...
   #add id from filename before binding...
@@ -270,7 +278,7 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   #### Step 8: Combine files by group id
   
   #undebug(survey_combine_by_column)
-  #list_df_col_combined <- survey_combine_by_column(list_out_filenames[1],df_data=df_test)
+  list_df_col_combined <- survey_combine_by_column(list_out_filenames[1],df_data=df_test)
   
   list_df_col_combined <- lapply(group_val,FUN= survey_combine_by_column,df_data=df_test)
   names(list_df_col_combined)<- list_out_filenames
@@ -317,7 +325,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
   ##########
   ## Step 2
   
-  #browser()
+  browser()
   
   if(combine_by_dir==T){
     
@@ -362,12 +370,12 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
   ### Step 3
   
   ##### Now loop through and bind data.frames
-  #browser()
+  browser()
   
   #undebug(combine_by_id_survey)
   ## Suvey_names 2 does not work: need to check when using option combine by dir
   #test_filename<- combine_by_id_survey(2,surveys_names,list_filenames2,out_suffix,out_dir)
-  test_filename <- combine_by_id_survey(6,surveys_names,list_filenames2,num_cores,out_suffix,out_dir)
+  test_filename <- combine_by_id_survey(3,surveys_names,list_filenames2,num_cores,out_suffix,out_dir)
   
   #test_df <- read.table(test_filename,sep=",",header=T,check.names = F)
   # Start writing to an output file
@@ -379,10 +387,12 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
   # Stop writing to the file
   sink()
   
+  num_cores_tmp <- 1 #set to 1 since we are already using mclapply and could go over the number of cores
   list_survey_df <- mclapply(1:length(surveys_names),
                              FUN=combine_by_id_survey,
                              surveys_names = surveys_names,
                              list_filenames=list_filenames2,
+                             num_cores= num_cores_tmp,
                              out_suffix=out_suffix,
                              out_dir=out_dir,
                              mc.preschedule = F,
