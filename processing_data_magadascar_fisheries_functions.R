@@ -2,14 +2,14 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 07/28/2017
+## DATE MODIFIED: 09/13/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
 ## TO DO:
 ##
-## COMMIT: adding documentationa and testing changes related 
+## COMMIT: data processing issues: follow up on meeting with Erwin and Jessica 
 ##
 ## Links to investigate:
 
@@ -70,10 +70,20 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
   
   if(is.null(in_dir)){
     #df <- read.table(in_filename,sep=";",fill=T,head=T, fileEncoding = "UTF-8")
-    df <- read.table(in_filename,sep=";",fill=T,header=T, stringsAsFactors = F)
+    df <- try(read.table(in_filename,sep=";",fill=T,header=T, 
+                         stringsAsFactors = F,fileEncoding="latin1"))
+    #This error is related to some files being encoded in ASCII "latin1", this
+    #encoding is being replaced by the newer UTF-8 iso standard
+    #In read.table the fileEncoding option is replaced from "UTF-8" by "latin1", 
+    #Adding encoding resolved the following error:
+    #Error in type.convert(data[[i]], as.is = as.is[i], dec = dec, numerals = numerals,  : 
+    #invalid multibyte string at '<b0>'
     
   }else{
-    df <- read.table(file.path(in_dir,in_filename),sep=";",fill=T,header=T)
+    #df <- try(read.table(file.path(in_dir,in_filename),sep=";",fill=T,header=T,
+    #                     stringsAsFactors = F,fileEncoding="latin1"))
+    df <- try(read.table(file.path(in_dir,in_filename),sep=";",fill=T,header=T,
+                         stringsAsFactors = F,fileEncoding="UTF-8"))
   }
   return(df)
 }
@@ -85,8 +95,13 @@ summary_data_table <- function(list_lf){
   
   ##### Begin script #####
   
-  #list_df <- lapply(list_lf_r[[1]],read_file_feed2go,out_dir)
+  #test_df <- read.table(list_lf[[13]],sep=";")
+  #debug(read_file_feed2go)
+  #test_df <- read_file_feed2go(list_lf[13])
+  #debug(read_file_feed2go)
+  #list_df <- lapply(list_lf[13],try(read_file_feed2go),out_dir)
   list_df <- lapply(list_lf,read_file_feed2go,out_dir)
+  
   #lapply(list_df,summary_table_df)
   dim_df <- dim_surveys_df(list_df)
   dim_df$filename <- basename(list_lf)
@@ -275,7 +290,7 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   list_out_filenames <- unique(df_test$out_filenames)
 
   ################
-  #### Step 8: Combine files by group id
+  #### Step  8: Combine files by group id
   
   #undebug(survey_combine_by_column)
   list_df_col_combined <- survey_combine_by_column(list_out_filenames[1],df_data=df_test)
