@@ -2,13 +2,13 @@
 ## Importing and processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 09/13/2017
+## DATE MODIFIED: 09/14/2017
 ## AUTHORS: Benoit Parmentier 
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
 ## TO DO:
 ##
-## COMMIT: testing and generating data combining by dir, parts and survey names
+## COMMIT: adding option to read in survey files with both UTF-8 and latin1
 ##
 ## Links to investigate:
 
@@ -60,7 +60,7 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_magadascar_fisheries_functions_09132017.R" #PARAM 1
+function_processing_data <- "processing_data_magadascar_fisheries_functions_09142017.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
 source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
@@ -195,9 +195,10 @@ list_dim_df <- mclapply(1:length(list_obj_summary),
 test_dim_df <- do.call(rbind,list_dim_df)
 dim(test_dim_df)
 View(test_dim_df)
-sum(test_dim_df$nrow==0)## there are 282 files that are read in with number of rows zero
-                       ## if only UTF-8 is used. So we must use latin1 as well!!!!
-
+sum(test_dim_df$nrow==0)## All files are now read when using latin1 as well.
+                        #There were 282 files that are read in with number of rows zero
+                       ## if only UTF-8 is used. 
+#note we have 1369 files instead of 1006 before.
 out_filename <- paste0("summary_table_df_",out_suffix,".txt")
 write.table(test_dim_df,file= file.path(out_dir,out_filename),sep=",")
 

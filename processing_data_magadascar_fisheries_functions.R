@@ -67,11 +67,25 @@ extract_date_feed2go <- function(string_val){
 read_file_feed2go <- function(in_filename,in_dir=NULL){
   ##Quick function to read in the feed2go data
   #if in_dir is null then the path is contained in the filename
+  #
+  #Problem with coding: some of the inputs have a latin1 instead of UTF-8
+  #A possibility is to generate a full function to guess the file encoding
+  #codepages <- setNames(iconvlist(), iconvlist())
+  #This is not implemented here. If a file read using UTF-8 returns a number
+  #of rows equals to zero then the function will attempt to read the file
+  #again using "latin1" file encoding.
+  
+  ##### Begin script ######
   
   if(is.null(in_dir)){
     #df <- read.table(in_filename,sep=";",fill=T,head=T, fileEncoding = "UTF-8")
     df <- try(read.table(in_filename,sep=";",fill=T,header=T, 
-                         stringsAsFactors = F,fileEncoding="latin1"))
+                         stringsAsFactors = F,fileEncoding="UTF-8"))
+    if(nrow(df)==0){
+      df <- try(read.table(in_filename,sep=";",fill=T,header=T, 
+                           stringsAsFactors = F,fileEncoding="latin1"))
+    }
+    
     #This error is related to some files being encoded in ASCII "latin1", this
     #encoding is being replaced by the newer UTF-8 iso standard
     #In read.table the fileEncoding option is replaced from "UTF-8" by "latin1", 
@@ -84,6 +98,10 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
     #                     stringsAsFactors = F,fileEncoding="latin1"))
     df <- try(read.table(file.path(in_dir,in_filename),sep=";",fill=T,header=T,
                          stringsAsFactors = F,fileEncoding="UTF-8"))
+    if(nrow(df)==0){
+      df <- try(read.table(file.path(in_dir,in_filename),sep=";",fill=T,header=T,
+                           stringsAsFactors = F,fileEncoding="latin1"))
+    }
   }
   return(df)
 }
