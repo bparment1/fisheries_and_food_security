@@ -79,11 +79,17 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
   
   if(is.null(in_dir)){
     #df <- read.table(in_filename,sep=";",fill=T,head=T, fileEncoding = "UTF-8")
-    df <- try(read.table(in_filename,sep=";",fill=T,header=T, 
+    df <- try(read.table(in_filename,sep=";",fill=T,
+                         header=T, quote = "",
                          stringsAsFactors = F,fileEncoding="UTF-8"))
     if(nrow(df)==0){
-      df <- try(read.table(in_filename,sep=";",fill=T,header=T, 
+      df <- try(read.table(in_filename,sep=";",fill=T,
+                           header=T,quote = "",
                            stringsAsFactors = F,fileEncoding="latin1"))
+    }
+    if(nrow(df==1)){
+      df <- try(read.table(in_filename,sep=";",
+                           header=T,stringsAsFactors = F))
     }
     
     #This error is related to some files being encoded in ASCII "latin1", this
@@ -96,10 +102,12 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
   }else{
     #df <- try(read.table(file.path(in_dir,in_filename),sep=";",fill=T,header=T,
     #                     stringsAsFactors = F,fileEncoding="latin1"))
-    df <- try(read.table(file.path(in_dir,in_filename),sep=";",fill=T,header=T,
+    df <- try(read.table(file.path(in_dir,in_filename),sep=";",fill=T,
+                         header=T,quote = "",
                          stringsAsFactors = F,fileEncoding="UTF-8"))
     if(nrow(df)==0){
-      df <- try(read.table(file.path(in_dir,in_filename),sep=";",fill=T,header=T,
+      df <- try(read.table(file.path(in_dir,in_filename),sep=";",fill=T,
+                           header=T,quote = "",
                            stringsAsFactors = F,fileEncoding="latin1"))
     }
   }
@@ -115,10 +123,12 @@ summary_data_table <- function(list_lf){
   
   #test_df <- read.table(list_lf[[13]],sep=";")
   #debug(read_file_feed2go)
-  #test_df <- read_file_feed2go(list_lf[13])
+  test_df <- read_file_feed2go(list_lf[1])
   #debug(read_file_feed2go)
   #list_df <- lapply(list_lf[13],try(read_file_feed2go),out_dir)
   list_df <- lapply(list_lf,read_file_feed2go,out_dir)
+  
+  test_df2 <- read.table(list_lf[1],sep=";",header=T)
   
   #lapply(list_df,summary_table_df)
   dim_df <- dim_surveys_df(list_df)

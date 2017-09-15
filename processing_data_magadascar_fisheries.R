@@ -60,7 +60,7 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_magadascar_fisheries_functions_09142017.R" #PARAM 1
+function_processing_data <- "processing_data_magadascar_fisheries_functions_09152017.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
 source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
@@ -159,6 +159,8 @@ names(list_lf_r) <- basename(lf_zip)
 test_summary <- summary_data_table(list_lf_r[[1]])
 test_df <- read.table(list_lf_r[[24]][1],sep=";",header=T)
 names(test_summary)
+
+"/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/workflow_preprocessing/outputs/output_processing_fisheries_magadascar_09132017/Feed2Go_csv_20160830153166600/Mpanjono 1 avy 2 July_20160830153118302.csv"
 
 #list_obj_summary <- lapply(list_lf_r[1:2],summary_data_table)
 list_obj_summary <- mclapply(list_lf_r, 
