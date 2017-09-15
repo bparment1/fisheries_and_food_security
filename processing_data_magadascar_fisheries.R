@@ -2,7 +2,7 @@
 ## Importing and processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 07/28/2017
+## DATE MODIFIED: 09/11/2017
 ## AUTHORS: Benoit Parmentier 
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
@@ -60,7 +60,7 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_magadascar_fisheries_functions_07282017.R" #PARAM 1
+function_processing_data <- "processing_data_magadascar_fisheries_functions_09112017.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
 source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
@@ -73,8 +73,16 @@ out_dir <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/work
 num_cores <- 2 #param 8
 create_out_dir_param=TRUE # param 9
 
-out_suffix <-"processing_fisheries_magadascar_07282017" #output suffix for the files and ouptut folder #param 12
+out_suffix <-"processing_fisheries_magadascar_09112017" #output suffix for the files and ouptut folder #param 12
 unzip_files <- T #param 15
+
+survey_names_updated <-  c("Fahasalamana",
+                          "Fahasalamana isanbolana",
+                          "Karazan-tsakafo", 
+                          "Laoko", 
+                          "Measure Sakafo",
+                          "Mpanjono",
+                          "Vola isambolana")
 
 ############## START SCRIPT ############################
 
@@ -135,9 +143,14 @@ if(unzip_files==T){
     lf_r <- list.files(pattern="*csv$",path=out_dir_zip,full.names = T)
     #lf_r <- file.path(out_dir_zip,lf_r)
     list_lf_r[[i]] <- lf_r
+    #names(list_lf_r[[i]])<- out_dir_zip
   }
 }
   
+names(list_lf_r) <- basename(lf_zip)
+
+#check dir: data not aggregated
+#Feed2Go_csv_20161102123979100
 
 ### Reading in all the datasets and summarizing information
 
@@ -151,6 +164,19 @@ list_obj_summary <- mclapply(list_lf_r,
                              FUN=summary_data_table,
                              mc.preschedule = F,
                              mc.cores = num_cores)
+
+### number 24: check error in reading files
+names(list_obj_summary)<- names(list_lf_r)
+list_obj_summary[[24]]
+
+zip_error <- lapply(list_obj_summary,
+                    FUN=function(x)(class(x)=="try-error"))
+zip_error
+df_zip_error <- data.frame(zip_file=basename(lf_zip),missing=as.numeric(zip_error))
+df_zip_error <- arrange(df_zip_error,desc(df_zip_error$missing))
+
+View(df_zip_error)
+class(list_obj_summary[[24]])=="try-error"
 
 #> warnings()
 #Warning message:
@@ -221,18 +247,11 @@ list_in_dir_zip <- unique(dirname(list_filenames))
 #, Laoko, Mpanjono
 #combine_survey_by_colum <- 
   
-suvey_names_updated <-  c("Fahasalamana",
-                          "Fahasalamana isanbolana",
-                           "Karazan-tsakafo", 
-                           "Laoko", 
-                           "Measure Sakafo",
-                           "Mpanjono",
-                           "Vola isambolana")
 
 #undebug(combine_by_surveys)
 #list_survey_df_filename <- combine_by_surveys(list_filenames,surveys_names=NULL,num_cores,out_suffix,out_dir)
 list_survey_df_filename <- combine_by_surveys(list_filenames,
-                                              surveys_names=suvey_names_updated,
+                                              surveys_names=survey_names_updated,
                                               num_cores,
                                               combine_by_dir=T,
                                               out_suffix,out_dir)
