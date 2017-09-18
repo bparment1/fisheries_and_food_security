@@ -9,7 +9,7 @@
 ## ISSUE: 
 ## TO DO:
 ##
-## COMMIT: data processing issues: follow up on meeting with Erwin and Jessica 
+## COMMIT: data processing issues: adding months in Malagasy to resolve errors and case sensitive option
 ##
 ## Links to investigate:
 
@@ -133,7 +133,7 @@ summary_data_table <- function(list_lf){
   #list_df <- lapply(list_lf[13],try(read_file_feed2go),out_dir)
   list_df <- lapply(list_lf,read_file_feed2go,out_dir)
   
-  test_df2 <- read.table(list_lf[1],sep=";",header=T)
+  #test_df2 <- read.table(list_lf[1],sep=";",header=T)
   
   #lapply(list_df,summary_table_df)
   dim_df <- dim_surveys_df(list_df)
@@ -245,7 +245,7 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   # This functions combines files of surveys using survey names, common dir and date information.
   # The first step is to identify for each directory:
   # 1) the existence of multiple parts for each month and survey - this is done by identifying the presence of "avy" 
-  #    and months in French or English
+  #    and months in French, English, Malagasy, upper and lower cases
   # 2) Grouping files by survey names, common dates and common directory
   # 3) Binding by column (wide format) the information
   # 4) return the list of files were combine by column for further processing
@@ -268,10 +268,26 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   keywords <- c("avy")
   
   ## Find the presence of multiple month names to group parts by unique months (names may be in French or English)
-  English_months <- month.name
-  French_months <- c("Janvier","Fevrier","Mars","Avril","Main","Juin","Juillet","Aout",
+  English_months_u <- month.name
+  English_months_l <- c("january","february","march","april","may","june","july","august",
+                        "september","october","november","december")
+  French_months_u <- c("Janvier","Fevrier","Mars","Avril","Mai","Juin","Juillet","Aout",
                      "Septembre","Octobre","Novembre","Decembre")
-  keywords_month <- c(English_months,French_months)
+  French_months_l <- c("janvier","fevrier","mars","avril","mai","juin","juillet","aout",
+                     "septembre","octobre","novembre","decembre")
+  Malagasy_months_u <- c("Janoary", "Febroary", "March", "Aprily", "Mey", "Jona", "Jolay", "Aogositra",
+                       "Septambra", "Oktobra", "Novambra", "Desambra")
+  Malagasy_months_l <- c("janoary", "febroary", "marsa", "aprily", "mey", "jona", "jolay", "aogositra",
+                         "septambra", "oktobra", "novambra", "desambra")
+  
+  additional_months_keywords <- c("Novembra","novembra") #alternative spelling for November in Malagasy
+  
+  keywords_month <- c(English_months_u,English_months_l,French_months_u,
+                      French_months_l,Malagasy_months_u,Malagasy_months_l,
+                      additional_months_keywords)
+  
+  ## Othe possibility use agrep https://stat.ethz.ch/R-manual/R-devel/library/base/html/agrep.html
+  ## for now use specific keywords!!!
   
   ##############
   ###  Step 2: Generate data.frame with combination  "avy" keywords from list of file names from the survey app
@@ -280,7 +296,8 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   
   ##############
   ### Step 3: data.frame with combination months keywords from list of file names from the survey app
-  df_strings_month <- as.data.frame(sapply(keywords_month, regexpr, list_filenames_subset, ignore.case=TRUE))
+  ## use case sensitive option 
+  df_strings_month <- as.data.frame(sapply(keywords_month, regexpr, list_filenames_subset, ignore.case=FALSE))
   
   #############
   ### Step 4: data.frame with combination survey_name keywords from list of file names from the survey app
@@ -291,12 +308,27 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   #############
   ### Step 5: Combine data.frame keywords in a common data.frame "df_strings"
   
+  #[21] "Feed2Go_csv_20161228154149400/Laoko 1 avy 3 septembre_201612281541953010.csv"            
+  
   survey_val <- unlist(lapply(1:nrow(df_strings_surveys),FUN=get_val_present,df_strings=df_strings_surveys))
+  #undebug(get_val_present)
+  
   month_val<- unlist(lapply(1:nrow(df_strings_month),FUN=get_val_present,df_strings=df_strings_month))
   
   #### Add month and survey info to df_strings
   
   df_strings$filenames <- basename(list_filenames_subset)
+  
+  #Browse[4]> df_strings$month_val <- month_val
+  #Error in `$<-.data.frame`(`*tmp*`, month_val, value = c("December", "Aout",  : 
+  #                                                          replacement has 49 rows, data has 51
+  ## missing three values here
+  #[14] "Feed2Go_csv_20161228154149400/Karazan-tsakafo 3 avy 3 Novembra_201612281542063043.csv"   
+  #
+  #[21] "Feed2Go_csv_20161228154149400/Laoko 1 avy 3 septembre_201612281541953010.csv"  
+  #[9] "Feed2Go_csv_20161228154149400/Karazan-tsakafo 2 avy 3 November._201612281542699036.csv"
+  #[49] "Feed2Go_csv_20161228154149400/Vola isambolana Novembra_201612281542533016.csv"           
+  
   df_strings$month_val <- month_val
   df_strings$survey_id <- survey_val
   
@@ -319,7 +351,7 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   df_test <- df_strings[df_strings$avy>0,]
   df_test$filenames <- file.path(out_dir,in_dir_zip,df_test$filenames)
   
-  group_val <- unique(df_test$group_id)
+  group_val <- unique(df_test$g  roup_id)
   list_out_filenames <- unique(df_test$out_filenames)
 
   ################
@@ -390,9 +422,10 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
     list_in_dir_zip <- unique(dirname(list_filenames))
     
     #undebug(combine_by_dir_surveys_part)
+    #combine_by_dir_surveys_part()
     #browser()
     
-    test_filenames2 <- combine_by_dir_surveys_part(list_in_dir_zip[1],
+    test_filenames2_zip <- combine_by_dir_surveys_part(list_in_dir_zip[11],
                                                    surveys_names = surveys_names,
                                                    list_filenames=list_filenames)
     
