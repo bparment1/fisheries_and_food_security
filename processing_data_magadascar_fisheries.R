@@ -2,7 +2,7 @@
 ## Importing and processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 09/14/2017
+## DATE MODIFIED: 09/18/2017
 ## AUTHORS: Benoit Parmentier 
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
@@ -60,7 +60,7 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_magadascar_fisheries_functions_09152017.R" #PARAM 1
+function_processing_data <- "processing_data_madagascar_fisheries_functions_09182017.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
 source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
@@ -73,7 +73,7 @@ out_dir <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/work
 num_cores <- 2 #param 8
 create_out_dir_param=TRUE # param 9
 
-out_suffix <-"processing_fisheries_magadascar_09132017" #output suffix for the files and ouptut folder #param 12
+out_suffix <-"processing_fisheries_madagascar_09182017" #output suffix for the files and ouptut folder #param 12
 unzip_files <- T #param 15
 
 survey_names_updated <-  c("Fahasalamana",
@@ -156,39 +156,25 @@ names(list_lf_r) <- basename(lf_zip)
 
 #quick test of reading in some data
 #undebug(summary_data_table)
-test_summary <- summary_data_table(list_lf_r[[1]])
-test_df <- read.table(list_lf_r[[24]][1],sep=";",header=T)
+#test_summary <- summary_data_table(list_lf_r[[24]])
+#test_summary <- summary_data_table(list_lf_r[[1]][1])
+#test_df <- read.table(list_lf_r[[24]][1],sep=";",header=T)
+#test_df <- read.table(list_lf_r[[1]][1],sep=";",header=T)
+#test_df <- read.table(list_lf_r[[24]][1],sep=";",header=T)
+
+#debug(summary_data_table)
+#test_summary <- summary_data_table(unlist(list_lf_r)[98])
+#"Feed2Go_csv_20160902074190400/Fahasalamana Aout 2_20160902074130802.csv"
+
 names(test_summary)
 
-"/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/workflow_preprocessing/outputs/output_processing_fisheries_magadascar_09132017/Feed2Go_csv_20160830153166600/Mpanjono 1 avy 2 July_20160830153118302.csv"
-
-#list_obj_summary <- lapply(list_lf_r[1:2],summary_data_table)
 list_obj_summary <- mclapply(list_lf_r, 
                              FUN=summary_data_table,
                              mc.preschedule = F,
                              mc.cores = num_cores)
 
-### number 24: check error in reading files
-names(list_obj_summary)<- names(list_lf_r)
-list_obj_summary[[24]]
-
-zip_error <- lapply(list_obj_summary,
-                    FUN=function(x)(class(x)=="try-error"))
-zip_error
-df_zip_error <- data.frame(zip_file=basename(lf_zip),missing=as.numeric(zip_error))
-df_zip_error <- arrange(df_zip_error,desc(df_zip_error$missing))
-
-View(df_zip_error)
-class(list_obj_summary[[24]])=="try-error"
-
-#> warnings()
-#Warning message:
-#  In mclapply(list_lf_r, FUN = summary_data_table, mc.preschedule = F,  ... :
-#                11 function calls resulted in an error
-              
-#30x46
 length(list_obj_summary)
-
+class(list_obj_summary)
 list_dim_df <- mclapply(1:length(list_obj_summary),
                         FUN=function(i){list_obj_summary[[i]]$dim_df},
                         mc.preschedule = F,
@@ -197,7 +183,7 @@ list_dim_df <- mclapply(1:length(list_obj_summary),
 test_dim_df <- do.call(rbind,list_dim_df)
 dim(test_dim_df)
 View(test_dim_df)
-sum(test_dim_df$nrow==0)## All files are now read when using latin1 as well.
+#sum(test_dim_df$nrow==0)## All files are now read when using latin1 as well.
                         #There were 282 files that are read in with number of rows zero
                        ## if only UTF-8 is used. 
 #note we have 1369 files instead of 1006 before.
