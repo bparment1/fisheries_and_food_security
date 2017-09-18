@@ -2,7 +2,7 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 09/13/2017
+## DATE MODIFIED: 09/18/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -87,6 +87,10 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
                            header=T,quote = "",
                            stringsAsFactors = F,fileEncoding="latin1"))
     }
+    if(nrow(df)==1){
+      df <- try(read.table(in_filename,sep=";",
+                           header=T,stringsAsFactors = F))
+    }
     
     #This error is related to some files being encoded in ASCII "latin1", this
     #encoding is being replaced by the newer UTF-8 iso standard
@@ -106,6 +110,11 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
                            header=T,quote = "",
                            stringsAsFactors = F,fileEncoding="latin1"))
     }
+    
+    if(nrow(df)==1){
+      df <- try(read.table(file.path(in_dir,in_filename),sep=";",
+                           header=T,stringsAsFactors = F))
+    }
   }
   return(df)
 }
@@ -117,12 +126,14 @@ summary_data_table <- function(list_lf){
   
   ##### Begin script #####
   
-  #test_df <- read.table(list_lf[[13]],sep=";")
+  #test_df <- read.table(list_lf[[1]],sep=";",header=T)
   #debug(read_file_feed2go)
   #test_df <- read_file_feed2go(list_lf[13])
   #debug(read_file_feed2go)
   #list_df <- lapply(list_lf[13],try(read_file_feed2go),out_dir)
   list_df <- lapply(list_lf,read_file_feed2go,out_dir)
+  
+  test_df2 <- read.table(list_lf[1],sep=";",header=T)
   
   #lapply(list_df,summary_table_df)
   dim_df <- dim_surveys_df(list_df)
