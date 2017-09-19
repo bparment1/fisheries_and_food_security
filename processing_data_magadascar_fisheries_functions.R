@@ -2,7 +2,7 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 09/18/2017
+## DATE MODIFIED: 09/120/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -216,9 +216,19 @@ combine_by_id_survey<- function(i,surveys_names,list_filenames,num_cores=1,out_s
 }
 
 get_val_present <- function(i,df_strings){
+  ## Utility function used after grep usage
+  ## Select rows matching keywords
+  
   row_df <- df_strings[i,]
   #row_df[row_df > 0]
   val_present <- names(row_df)[row_df > 0] #select names with value present!, -1 means not present
+  if(length(val_present)==0){
+    val_present <- NA
+  }
+  if(length(val_present)>1){
+    val_present<- paste0(length(val_present)," matched")
+  }
+  
   return(val_present)
 }
 
@@ -280,14 +290,8 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   Malagasy_months_l <- c("janoary", "febroary", "marsa", "aprily", "mey", "jona", "jolay", "aogositra",
                          "septambra", "oktobra", "novambra", "desambra")
   
-  additional_months_keywords <- c("Novembra","novembra") #alternative spelling for November in Malagasy
-  
   keywords_month <- c(English_months_u,English_months_l,French_months_u,
-                      French_months_l,Malagasy_months_u,Malagasy_months_l,
-                      additional_months_keywords)
-  
-  ## Othe possibility use agrep https://stat.ethz.ch/R-manual/R-devel/library/base/html/agrep.html
-  ## for now use specific keywords!!!
+                      French_months_l,Malagasy_months_u,Malagasy_months_l)
   
   ##############
   ###  Step 2: Generate data.frame with combination  "avy" keywords from list of file names from the survey app
@@ -297,6 +301,7 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   ##############
   ### Step 3: data.frame with combination months keywords from list of file names from the survey app
   ## use case sensitive option 
+  #df_strings_month <- as.data.frame(sapply(keywords_month, regexpr, list_filenames_subset, ignore.case=FALSE))
   df_strings_month <- as.data.frame(sapply(keywords_month, regexpr, list_filenames_subset, ignore.case=FALSE))
   
   #############
@@ -313,6 +318,7 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   survey_val <- unlist(lapply(1:nrow(df_strings_surveys),FUN=get_val_present,df_strings=df_strings_surveys))
   #undebug(get_val_present)
   
+  #get_val_present(49,df_strings_month)
   month_val<- unlist(lapply(1:nrow(df_strings_month),FUN=get_val_present,df_strings=df_strings_month))
   
   #### Add month and survey info to df_strings
@@ -332,6 +338,50 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   df_strings$month_val <- month_val
   df_strings$survey_id <- survey_val
   
+  ## Replace all names of months by English???
+  #http://rprogramming.net/recode-data-in-r/
+    
+  # Recode grade 5 to grade 6 and grade 6 to grade 7
+  # SchoolData$Grade<-recode(SchoolData$Grade,"5=6;6=7")
+  
+  df_strings$month_val
+  
+  #dplyr
+  
+  add_single_quote <- function(char_val){paste0("'",char_val,"'")}
+
+  recode_val_fun <- function(string_input,string_val,string_ref){
+    string_recode <- paste0(add_single_quote(string_val),"=",add_single_quote(string_ref))
+    string_recode <- paste(string_recode,collapse=";")
+    string_output <- car::recode(string_input,string_recode)
+    return(string_output)
+  }
+  
+  list_months_values <- list(English_months_u,French_months_l, French_months_u,Malagasy_months_u,Malagasy_months_l)
+  
+  month_val_recoded <- month_val
+  
+  for(i in 1:length(list_months_values)){
+    #test <- recode_val_fun(month_val,string_val=French_months_l,string_ref=English_months_u)
+    month_val_recoded <- recode_val_fun(month_val_recoded,string_val=list_months_values[[i]],string_ref=English_months_u)
+  }
+  
+  #test <- recode_val_fun(month_val,string_val=French_months_l,string_ref=English_months_u)
+  
+  #test_keywords <- c(paste0(add_single_quote(French_months_l),"=",add_single_quote(English_months_u)),
+  #     paste0(French_months_u,"=",English_months_u),
+  #     paste0(Malagasy_months_l,"=",English_months_u),
+  #     paste0(Malagasy_months_u,"=",English_months_u),
+  #     paste0(English_months_l,"=",English_months_u))
+  #     paste0("Novembra","=","November"))
+              
+  test_keywords <- paste(test_keywords,collapse=";")
+  
+  test <- car::recode(month_val,test_keywords)
+  test <- car::recode(month_val,c("'Aout'='August'"))
+  
+  test_keywords <- paste0(add_single_quote(French_months_l),"=",add_single_quote(English_months_u))
+         
   ##############
   ### Step 6: Generate group_id used to combine files by columns
   
@@ -351,7 +401,7 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   df_test <- df_strings[df_strings$avy>0,]
   df_test$filenames <- file.path(out_dir,in_dir_zip,df_test$filenames)
   
-  group_val <- unique(df_test$g  roup_id)
+  group_val <- unique(df_test$group_id)
   list_out_filenames <- unique(df_test$out_filenames)
 
   ################

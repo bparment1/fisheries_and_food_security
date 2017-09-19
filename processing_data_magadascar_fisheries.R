@@ -60,7 +60,7 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_madagascar_fisheries_functions_09182017.R" #PARAM 1
+function_processing_data <- "processing_data_madagascar_fisheries_functions_09192017.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
 source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
