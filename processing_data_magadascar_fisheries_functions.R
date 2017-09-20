@@ -46,7 +46,7 @@ library(gridExtra)                           # Combining lattice plots
 library(colorRamps)                          # Palette/color ramps for symbology
 library(ggplot2)                             # Plotting package using grammar of graphics
 library(rowr)                                # Contains cbind.fill
-
+library(car)
 
 ###### Functions used in this script sourced from other files
 
@@ -338,43 +338,57 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   df_strings$month_val <- month_val
   df_strings$survey_id <- survey_val
   
-  ## Replace all names of months by English???
-  #http://rprogramming.net/recode-data-in-r/
-    
-  # Recode grade 5 to grade 6 and grade 6 to grade 7
-  # SchoolData$Grade<-recode(SchoolData$Grade,"5=6;6=7")
-  
-  df_strings$month_val
-  
   #dplyr
   
-  add_single_quote <- function(char_val){paste0("'",char_val,"'")}
+  add_single_quote <- function(char_val){
+    #Quick function to add single quote
+    char_val <- paste0("'",char_val,"'")
+    return(char_val)
+  }
 
-  recode_val_fun <- function(string_input,string_val,string_ref){
+  recode_string_fun <- function(string_input,string_val,string_ref){
+    #Take a string input and replaces values given string_values matching reference values (to be recoded)
+    #string_input: input vector of character type
+    #string_val: values to be changed (from)
+    #string_ref: values matched (to)
+    
+    ## Begin ##
+    
     string_recode <- paste0(add_single_quote(string_val),"=",add_single_quote(string_ref))
     string_recode <- paste(string_recode,collapse=";")
     string_output <- car::recode(string_input,string_recode)
     return(string_output)
   }
   
+  
+  recode_val_fun <- function(list_month_val,string_val,string_ref){
+    
+    month_val_recoded <- month_val
+    
+    if(class(string_val)=="character"){
+      month_val_recoded <- recode_val_fun(month_val_recoded,
+                                          string_val=string_val,
+                                          string_ref=string_ref)
+    }
+    
+    for(i in 1:length(string_val)){
+      #test <- recode_val_fun(month_val,string_val=French_months_l,string_ref=English_months_u)
+      month_val_recoded <- recode_val_fun(month_val_recoded,
+                                          string_val=string_val[[i]],
+                                          string_ref=string_ref)
+    }
+    
+    return(month_val_recoded)
+  } 
+
   list_months_values <- list(English_months_u,French_months_l, French_months_u,Malagasy_months_u,Malagasy_months_l)
   
-  month_val_recoded <- month_val
-  
-  for(i in 1:length(list_months_values)){
-    #test <- recode_val_fun(month_val,string_val=French_months_l,string_ref=English_months_u)
-    month_val_recoded <- recode_val_fun(month_val_recoded,string_val=list_months_values[[i]],string_ref=English_months_u)
-  }
-  
+  test <- recode_val_fun(month_val,
+                         string_val=list_months_values,
+                         string_ref=English_months_u)
   #test <- recode_val_fun(month_val,string_val=French_months_l,string_ref=English_months_u)
   
-  #test_keywords <- c(paste0(add_single_quote(French_months_l),"=",add_single_quote(English_months_u)),
-  #     paste0(French_months_u,"=",English_months_u),
-  #     paste0(Malagasy_months_l,"=",English_months_u),
-  #     paste0(Malagasy_months_u,"=",English_months_u),
-  #     paste0(English_months_l,"=",English_months_u))
-  #     paste0("Novembra","=","November"))
-              
+
   test_keywords <- paste(test_keywords,collapse=";")
   
   test <- car::recode(month_val,test_keywords)
