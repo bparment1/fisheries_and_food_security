@@ -2,7 +2,7 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 09/120/2017
+## DATE MODIFIED: 09/21/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -27,6 +27,9 @@
 #[8] "summary_data_table" : generate summary of data collected for the survey (over >200)         
 #[9] "survey_combine_by_column": helper function, carries out the process of combining by column using group_id   
 
+#[10] recode_val_fun
+#[11] recode_string_fun
+#[12] add_single_quote
 
 ###### Library used
 
@@ -158,6 +161,47 @@ dim_surveys_df <- function(list_df){
   return(dim_df)
 }
 
+add_single_quote <- function(char_val){
+  #Quick function to add single quote
+  char_val <- paste0("'",char_val,"'")
+  return(char_val)
+}
+
+recode_string_fun <- function(string_input,string_val,string_ref){
+  #Take a string input and replaces values given string_values matching reference values (to be recoded)
+  #string_input: input vector of character type
+  #string_val: values to be changed (from)
+  #string_ref: values matched (to)
+  
+  ## Begin ##
+  
+  string_recode <- paste0(add_single_quote(string_val),"=",add_single_quote(string_ref))
+  string_recode <- paste(string_recode,collapse=";")
+  string_output <- car::recode(string_input,string_recode)
+  return(string_output)
+}
+
+
+recode_val_fun <- function(month_val,string_val,string_ref){
+  
+  month_val_recoded <- month_val
+  
+  if(class(string_val)=="character"){
+    month_val_recoded <- recode_string_fun(month_val_recoded,
+                                        string_val=string_val,
+                                        string_ref=string_ref)
+  }
+  
+  for(i in 1:length(string_val)){
+    #test <- recode_string_fun(month_val,string_val=French_months_l,string_ref=English_months_u)
+    month_val_recoded <- recode_string_fun(month_val_recoded,
+                                        string_val=string_val[[i]],
+                                        string_ref=string_ref)
+  }
+  
+  return(month_val_recoded)
+} 
+
 combine_by_id_survey<- function(i,surveys_names,list_filenames,num_cores=1,out_suffix="",out_dir="."){
   # This function combines input files based on survey names id
   #
@@ -232,9 +276,15 @@ get_val_present <- function(i,df_strings){
   return(val_present)
 }
 
-survey_combine_by_column <- function(out_filenames_selected,df_data){
-  #Combine survey by column based on list of files defined in data.frame
+survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt=1){
   #
+  # This function Combines survey by column based on list of files defined in data.frame
+  ##Inputs:
+  # 1) out_filenames_selected: output name
+  # 2) df_data:
+  # 3) method_opt:
+  ##Outputs:
+  # 1) out_filenames_selected: output name (modified from input)
   
   ###### Begin script ####
   
@@ -243,11 +293,48 @@ survey_combine_by_column <- function(out_filenames_selected,df_data){
   df_subset <- df_subset[with(df_subset, order(filenames)), ]
   list_df <-lapply(df_subset$filenames,FUN=function(x){read.table(x,sep=";",header=T)})
   
-  df_subset_combined <- do.call(cbind.fill,list_df) # Note that cbind.fill is found in rowr package
-  #df_subset_combined <- do.call(rbind.fill,list_df)
-  write.table(df_subset_combined,out_filenames_selected,sep=";")
+  ### Now add identifier column to keep track of record origin
   
-  return(out_filenames_selected)
+  #repeat filename to fill in new columns with ID
+  #list_column_filename <- lapply(1:length(list_df),
+  #                               FUN=function(i,x,y){rep(y[i],nrow(x[[i]]))},x=list_df,y=names(list_df))
+  
+  #df_survey$filename <- unlist(list_column_filename) #adding identifier for table
+  #out_filename <- paste0(surveys_names[i],"_",out_suffix,".txt")
+  #write.table(df_survey,file.path(out_dir,out_filename),sep=",",row.names = F)
+  
+  #### No combine by column and row options
+  
+  #use plyr option
+  df_subset_combined_method1 <- do.call(rbind.fill,list_df) #294 unique column names, only unique columns are retained
+  #use rowr package
+  df_subset_combined_method2 <- do.call(cbind.fill,list_df) # Note that cbind.fill is found in rowr package, 
+  # cbind.fill retains all columns even if there are duplicates
+  
+  out_filenames_selected_method1 <- sub("\\.csv$","_byrow.csv",out_filenames_selected)
+  write.table(df_subset_combined_method1,
+              out_filenames_selected_method1,
+              sep=";",
+              row.names = FALSE)
+  
+  out_filenames_selected_method2 <- sub("\\.csv$","_bycol.csv",out_filenames_selected)
+  write.table(df_subset_combined_method2,
+              out_filenames_selected_method2,
+              sep=";",
+              row.names = FALSE)
+  
+  ### Prepare 
+  
+  if(method_opt==1){
+    df_subset_combined <- df_subset_combined_method1
+    out_filename <- out_filenames_selected_method1
+  }else{
+    df_subset_combined <- df_subset_combined_method2
+    out_filename <- out_filenames_selected_method2
+  }
+
+  #df_data$
+  return(out_filename)
   
 }
 
@@ -291,8 +378,8 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
                          "septambra", "oktobra", "novambra", "desambra")
   
   keywords_month <- c(English_months_u,English_months_l,French_months_u,
-                      French_months_l,Malagasy_months_u,Malagasy_months_l)
-  
+                      French_months_l,Malagasy_months_u,Malagasy_months_l,
+                      "Novembra","novembra")
   ##############
   ###  Step 2: Generate data.frame with combination  "avy" keywords from list of file names from the survey app
   df_strings <- as.data.frame(sapply(keywords, regexpr, list_filenames_subset, ignore.case=TRUE))
@@ -313,8 +400,6 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   #############
   ### Step 5: Combine data.frame keywords in a common data.frame "df_strings"
   
-  #[21] "Feed2Go_csv_20161228154149400/Laoko 1 avy 3 septembre_201612281541953010.csv"            
-  
   survey_val <- unlist(lapply(1:nrow(df_strings_surveys),FUN=get_val_present,df_strings=df_strings_surveys))
   #undebug(get_val_present)
   
@@ -325,77 +410,20 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   
   df_strings$filenames <- basename(list_filenames_subset)
   
-  #Browse[4]> df_strings$month_val <- month_val
-  #Error in `$<-.data.frame`(`*tmp*`, month_val, value = c("December", "Aout",  : 
-  #                                                          replacement has 49 rows, data has 51
-  ## missing three values here
-  #[14] "Feed2Go_csv_20161228154149400/Karazan-tsakafo 3 avy 3 Novembra_201612281542063043.csv"   
-  #
-  #[21] "Feed2Go_csv_20161228154149400/Laoko 1 avy 3 septembre_201612281541953010.csv"  
-  #[9] "Feed2Go_csv_20161228154149400/Karazan-tsakafo 2 avy 3 November._201612281542699036.csv"
-  #[49] "Feed2Go_csv_20161228154149400/Vola isambolana Novembra_201612281542533016.csv"           
-  
-  df_strings$month_val <- month_val
-  df_strings$survey_id <- survey_val
-  
   #dplyr
   
-  add_single_quote <- function(char_val){
-    #Quick function to add single quote
-    char_val <- paste0("'",char_val,"'")
-    return(char_val)
-  }
-
-  recode_string_fun <- function(string_input,string_val,string_ref){
-    #Take a string input and replaces values given string_values matching reference values (to be recoded)
-    #string_input: input vector of character type
-    #string_val: values to be changed (from)
-    #string_ref: values matched (to)
-    
-    ## Begin ##
-    
-    string_recode <- paste0(add_single_quote(string_val),"=",add_single_quote(string_ref))
-    string_recode <- paste(string_recode,collapse=";")
-    string_output <- car::recode(string_input,string_recode)
-    return(string_output)
-  }
-  
-  
-  recode_val_fun <- function(list_month_val,string_val,string_ref){
-    
-    month_val_recoded <- month_val
-    
-    if(class(string_val)=="character"){
-      month_val_recoded <- recode_val_fun(month_val_recoded,
-                                          string_val=string_val,
-                                          string_ref=string_ref)
-    }
-    
-    for(i in 1:length(string_val)){
-      #test <- recode_val_fun(month_val,string_val=French_months_l,string_ref=English_months_u)
-      month_val_recoded <- recode_val_fun(month_val_recoded,
-                                          string_val=string_val[[i]],
-                                          string_ref=string_ref)
-    }
-    
-    return(month_val_recoded)
-  } 
-
   list_months_values <- list(English_months_u,French_months_l, French_months_u,Malagasy_months_u,Malagasy_months_l)
-  
-  test <- recode_val_fun(month_val,
+  #debug(recode_val_fun)
+  month_val_recoded <- recode_val_fun(month_val=month_val,
                          string_val=list_months_values,
                          string_ref=English_months_u)
-  #test <- recode_val_fun(month_val,string_val=French_months_l,string_ref=English_months_u)
+  month_val_recoded <- recode_val_fun(month_val_recoded,
+                                      string_val=c("novembra","Novembra"),
+                                      string_ref=c("November","November"))
   
-
-  test_keywords <- paste(test_keywords,collapse=";")
+  df_strings$month_val <- month_val_recoded
+  df_strings$survey_id <- survey_val
   
-  test <- car::recode(month_val,test_keywords)
-  test <- car::recode(month_val,c("'Aout'='August'"))
-  
-  test_keywords <- paste0(add_single_quote(French_months_l),"=",add_single_quote(English_months_u))
-         
   ##############
   ### Step 6: Generate group_id used to combine files by columns
   
@@ -422,11 +450,14 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   #### Step  8: Combine files by group id
   
   #undebug(survey_combine_by_column)
-  list_df_col_combined <- survey_combine_by_column(list_out_filenames[1],df_data=df_test)
+  list_df_col_combined <- survey_combine_by_column(list_out_filenames[2],df_data=df_test)
   
-  list_df_col_combined <- lapply(group_val,FUN= survey_combine_by_column,df_data=df_test)
+  list_df_col_combined <- lapply(list_out_filenames,FUN= survey_combine_by_column,df_data=df_test)
+  
+  #list_df_col_combined <- lapply(group_val,FUN= survey_combine_by_column,df_data=df_test)
   names(list_df_col_combined)<- list_out_filenames
   
+  c(list_df_col_combined,df_strings[df_strings$avy<0,c("out_filenames")
   list_filenames2 <- unique(df_strings$out_filenames)
   
   return(list_filenames2)

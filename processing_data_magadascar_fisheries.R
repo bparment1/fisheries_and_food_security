@@ -2,7 +2,7 @@
 ## Importing and processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 09/18/2017
+## DATE MODIFIED: 09/20/2017
 ## AUTHORS: Benoit Parmentier 
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
@@ -35,6 +35,7 @@ library(ggplot2)
 library(lubridate)
 library(dplyr)
 library(rowr)                                # Contains cbind.fill
+library(car)
 
 ###### Functions used in this script and sourced from other files
 
@@ -60,7 +61,7 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_madagascar_fisheries_functions_09192017.R" #PARAM 1
+function_processing_data <- "processing_data_madagascar_fisheries_functions_09202017b.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
 source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
