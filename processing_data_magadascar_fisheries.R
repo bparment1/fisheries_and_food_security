@@ -2,7 +2,7 @@
 ## Importing and processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 10/19/2017
+## DATE MODIFIED: 11/27/2017
 ## AUTHORS: Benoit Parmentier 
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
@@ -61,7 +61,7 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_madagascar_fisheries_functions_10192017.R" #PARAM 1
+function_processing_data <- "processing_data_madagascar_fisheries_functions_11272017.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
 source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
@@ -74,7 +74,7 @@ out_dir <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/work
 num_cores <- 2 #param 8
 create_out_dir_param=TRUE # param 9
 
-out_suffix <-"processing_fisheries_madagascar_10182017" #output suffix for the files and ouptut folder #param 12
+out_suffix <-"processing_fisheries_madagascar_11272017" #output suffix for the files and ouptut folder #param 12
 unzip_files <- T #param 15
 
 survey_names_updated <-  c("Fahasalamana",
@@ -86,8 +86,12 @@ survey_names_updated <-  c("Fahasalamana",
                           "Vola isambolana")
 
 combine_by_dir <- TRUE #if TRUE then examine in each directory if files are split (keyword "avy") in parts and/or month
+#1. find "avy"
+#2. find word before and after (number: 1,2 or 3)
+#3. find month Aout, July, June 
+#other option find the month by examining 2nd word from the end after eliminating the extension
 
-combine_option <- "byrow"
+combine_option <- "byrow" #This is the option to combine avy byrow or column
 
 ############## START SCRIPT ############################
 
@@ -113,7 +117,8 @@ if(create_out_dir_param==TRUE){
 
 lf_dir <- list.files(in_dir,full.names=T) #this is the list of folder with RAW data information
 ##Get zip files in each input RAW dir
-lf_zip <- unlist(lapply(lf_dir,function(x){list.files(pattern=paste("*.zip$",sep=""),
+lf_zip <- unlist(lapply(lf_dir,
+                        function(x){list.files(pattern=paste("*.zip$",sep=""),
                                                                    path=x,full.names=T)}))
 #Record list of files to unzip and path directory
 df_zip <- data.frame(file_zip=basename(lf_zip))
@@ -146,15 +151,18 @@ if(unzip_files==T){
     out_dir_zip <- sub(".zip","",(basename(lf_zip[[i]])))
     lf_r <- lapply(lf_zip[[i]], unzip,exdir= out_dir_zip)
     lf_r <- list.files(pattern="*csv$",path=out_dir_zip,full.names = T)
-    #lf_r <- file.path(out_dir_zip,lf_r)
     list_lf_r[[i]] <- lf_r
-    #names(list_lf_r[[i]])<- out_dir_zip
   }
 }
   
 names(list_lf_r) <- basename(lf_zip)
 
 #names(test_summary)
+
+#undebug(summary_data_table)
+list_obj_summary_test <- summary_data_table(list_lf_r[[1]]) 
+                             
+
 
 list_obj_summary <- mclapply(list_lf_r, 
                              FUN=summary_data_table,
@@ -178,10 +186,6 @@ View(test_dim_df)
 out_filename <- paste0("summary_table_df_",out_suffix,".txt")
 write.table(test_dim_df,file= file.path(out_dir,out_filename),sep=",")
 
-#undebug(summary_data_table)
-test_summary <- summary_data_table(list_lf_r[[1]])
-names(test_summary)
-
 ## To combine data: use
 #1) extracted names from the file names (use first char??)
 
@@ -191,16 +195,7 @@ list_filenames_original <-  file.path(test_dim_df$zip_file,test_dim_df$filename)
 list_filenames <- file.path(test_dim_df$zip_file,test_dim_df$filename)
 basename(list_filenames)  
 list_in_dir_zip <- unique(dirname(list_filenames))
-
-
-#list_combined_df_file_ID[[2]]
-#list_ID_char <- mclapply(1:length(list_combined_df_file_ID),
-#                         FUN=function(i){list_combined_df_file_ID[[i]][1]},
-#                         mc.preschedule = F,
-#                         mc.cores = num_cores)
-
-#surveys_names <- unique(unlist(list_ID_char))
-#surveys_names <- grep("Error",surveys_names,invert=T,value=T)
+unique_filenames <- unique(basename(list_filenames))
 
 #2) Using survey names pre-given
 ### Survey names:
@@ -211,7 +206,6 @@ list_in_dir_zip <- unique(dirname(list_filenames))
 #Measure Sakafo
 #Mpanjono
 #Vola isambolana
-
 
 #undebug(combine_by_surveys)
 #list_survey_df_filename <- combine_by_surveys(list_filenames,surveys_names=NULL,num_cores,out_suffix,out_dir)
