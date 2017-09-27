@@ -226,6 +226,17 @@ recode_string_fun <- function(string_input,string_val,string_ref){
 
 
 recode_val_fun <- function(month_val,string_val,string_ref){
+  #
+  # This function recodes a string of character using input and reference values
+  #
+  #INPUTS:
+  #1) month_val: input characters to recode
+  #2) string_val:  input string of values to be matched
+  #3) string_ref:  ref string of values 
+  #OUTPUTS:
+  #month_val_recoded: recoded string using input
+  
+  ##### Begin script ####
   
   month_val_recoded <- month_val
   
@@ -332,50 +343,12 @@ survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt="
   ###### Begin script ####
   
   df_subset <- subset(df_data,df_data$out_filenames==out_filenames_selected)
-  
   df_subset <- df_subset[with(df_subset, order(filenames)), ]
-  
-  #list_df <-lapply(df_subset$filenames,FUN=function(x){read.table(x,sep=";",header=T)})
-  #df_tmp_val <- read.table(df_subset$filenames[1],sep=";")
-  #df_tmp_val <- read.table(df_subset$filenames[1],sep=";",header=T)
-  #this gets the following error:
-  #Error in type.convert(data[[i]], as.is = as.is[i], dec = dec, numerals = numerals,  : 
-  #                        invalid multibyte string at '<b0>'
-  
-  #Problem with coding: some of the inputs have a latin1 instead of UTF-8
-  #A possibility is to generate a full function to guess the file encoding
-  #codepages <- setNames(iconvlist(), iconvlist())
-  #This is not implemented here. If a file read using UTF-8 returns a number
-  #of rows equals to zero then the function will attempt to read the file
-  #again using "latin1" file encoding
-  
-  
+
   list_df <-lapply(df_subset$filenames,FUN=read_file_feed2go)
   #debug(read_file_feed2go)
   #undebug(read_file_feed2go)
 
-  #test <- read_file_feed2go(df_subset$filenames[1])  
-  #in_filename <- df_subset$filenames[1]
-  #if(warnings)
-  #this results in 3 lines
-  #df <- tryCatch(read.table(in_filename,
-  #                     sep=";",
-  #                     fill=T,
-  #                     header=T, 
-  #                     quote = "",
-  #                     stringsAsFactors = F,
-  #                    fileEncoding="UTF-8",
-  #                     check.names = F))
-  #This results in 28 lines
-  #df <- tryCatch(read.table(in_filename,
-  #                          sep=";",
-  #                          fill=T,
-  #                          header=T, 
-  #                          quote = "",
-  #                          stringsAsFactors = F,
-  #                          #fileEncoding="UTF-8",
-  #                          check.names = F))
-            
   #in_filename <- df_subset$filenames[1]
   ### Now add identifier column to keep track of record origin
   
@@ -387,13 +360,27 @@ survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt="
   #out_filename <- paste0(surveys_names[i],"_",out_suffix,".txt")
   #write.table(df_survey,file.path(out_dir,out_filename),sep=",",row.names = F)
   
-  #### No combine by column and row options
+  #### Now combine by column and row options
+  
+  l_names <- unlist(lapply(list_df,FUN=function(x){names(x)}))
+  length(unique(l_names)) #should be number of columns for method1
+  length(l_names) #should be number of columns for method2
   
   #use plyr option
+  #test1 <- bind_rows(list_df) #this acts on a list!!!
+  #test2 <- bind_cols(list_df)
+  #test2 <- join(list_df)
+  #test2 <- do.call(_full_join_,list_df)
+  #test2 <- do(full_join,list_df,by=NULL)
+  #test2 <- full_join(list_df[[1]],list_df[[2]])
+  
   df_subset_combined_method1 <- do.call(rbind.fill,list_df) #294 unique column names, only unique columns are retained
   #use rowr package
-  df_subset_combined_method2 <- do.call(cbind.fill,list_df) # Note that cbind.fill is found in rowr package, 
-  # cbind.fill retains all columns even if there are duplicates
+  df_subset_combined_method2 <- do.call(cbind.fill,list_df) # All columns are retained, even duplicates
+                                     
+  # cbind.fill is in rowsr
+  # rbind.fill in plyr
+  #
   
   out_filenames_selected_method1 <- sub("\\.csv$","_byrow.csv",out_filenames_selected)
   write.table(df_subset_combined_method1,
@@ -412,6 +399,18 @@ survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt="
               #fileEncoding = "UTF-8",
               col.names=T,
               quote=F)
+  
+  unique(l_names)[1:10]
+  names(df_subset_combined_method1)[1:10]
+  (l_names)[1:10]
+  names(df_subset_combined_method2)[1:10]
+  #sub("[\]","",l_names)
+  sub("\\","",l_names) #remove back slashes, note that we 
+  #sub("\"","",l_names) #remove back slashes, note that we 
+  l_names1 <- gsub("\"","",l_names) #remove back slashes, note that we 
+  l_names2 <- noquote(l_names1)
+  #l_names3 <- gsub("\"","",l_names2) #remove back slashes, note that we 
+  #noquotes(l_names3)
   
   ### Prepare 
   
@@ -525,11 +524,12 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames,
   #dplyr
   
   #Missing English month lower case
-  list_months_values <- list(English_months_u,French_months_l, French_months_u,Malagasy_months_u,Malagasy_months_l)
+  list_months_values <- list(English_months_l,English_months_u,French_months_l, French_months_u,Malagasy_months_u,Malagasy_months_l)
   #debug(recode_val_fun)
   month_val_recoded <- recode_val_fun(month_val=month_val,
                          string_val=list_months_values,
                          string_ref=English_months_u)
+  ## Recode addtional values if necessary:
   month_val_recoded <- recode_val_fun(month_val_recoded,
                                       string_val=c("novembra","Novembra"),
                                       string_ref=c("November","November"))
@@ -642,7 +642,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
   ##########
   ## Step 2
   
-  #browser()
+  browser()
   
   if(combine_by_dir==T){
     
@@ -671,12 +671,13 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
     #attr(,"condition")
     #<simpleError in type.convert(data[[i]], as.is = as.is[i], dec = dec, numerals = numerals,     na.strings = character(0L)): invalid multibyte string at '<b0>'>
     
+    #debug(combine_by_dir_surveys_part)
     ### By default byrow and bycolumn are produced but only one file is selected to be combined in the survey name
     test_filenames2_zip <- combine_by_dir_surveys_part(list_in_dir_zip[4],
                                                    surveys_names = surveys_names,
                                                    list_filenames=list_filenames,
                                                    combine_option=combine_option, #byrow or bycolumn
-                                                   out_dir=NULL)
+                                                   out_dir=out_dir)
     
 
     #Example:
