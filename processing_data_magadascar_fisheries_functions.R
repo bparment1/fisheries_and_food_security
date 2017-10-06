@@ -2,7 +2,7 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 09/21/2017
+## DATE MODIFIED: 10/06/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -291,8 +291,23 @@ survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt=1
   df_subset <- subset(df_data,df_data$out_filenames==out_filenames_selected)
   
   df_subset <- df_subset[with(df_subset, order(filenames)), ]
-  list_df <-lapply(df_subset$filenames,FUN=function(x){read.table(x,sep=";",header=T)})
   
+  list_df <-lapply(df_subset$filenames,FUN=function(x){read.table(x,sep=";",header=T)})
+  df_tmp_val <- read.table(df_subset$filenames[1],sep=";")
+  df_tmp_val <- read.table(df_subset$filenames[1],sep=";",header=T)
+  #this gets the following error:
+  #Error in type.convert(data[[i]], as.is = as.is[i], dec = dec, numerals = numerals,  : 
+  #                        invalid multibyte string at '<b0>'
+  
+  #Problem with coding: some of the inputs have a latin1 instead of UTF-8
+  #A possibility is to generate a full function to guess the file encoding
+  #codepages <- setNames(iconvlist(), iconvlist())
+  #This is not implemented here. If a file read using UTF-8 returns a number
+  #of rows equals to zero then the function will attempt to read the file
+  #again using "latin1" file encoding
+  
+                        
+                          
   ### Now add identifier column to keep track of record origin
   
   #repeat filename to fill in new columns with ID
@@ -450,14 +465,21 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   #### Step  8: Combine files by group id
   
   #undebug(survey_combine_by_column)
-  list_df_col_combined <- survey_combine_by_column(list_out_filenames[2],df_data=df_test)
+  list_df_col_combined <- survey_combine_by_column(list_out_filenames[4],df_data=df_test)
   
   list_df_col_combined <- lapply(list_out_filenames,FUN= survey_combine_by_column,df_data=df_test)
+  list_df_col_combined <- mclapply(list_out_filenames,
+                                   FUN= survey_combine_by_column,
+                                   df_data=df_test,
+                                   mc.preschedule = FALSE,
+                                   mc.cores=num_cores
+                                   )
   
   #list_df_col_combined <- lapply(group_val,FUN= survey_combine_by_column,df_data=df_test)
   names(list_df_col_combined)<- list_out_filenames
   
-  c(list_df_col_combined,df_strings[df_strings$avy<0,c("out_filenames")
+  #this might need to be changed
+  list_filenames2 <- c(list_df_col_combined,df_strings[df_strings$avy<0,c("out_filenames")])
   list_filenames2 <- unique(df_strings$out_filenames)
   
   return(list_filenames2)
@@ -520,7 +542,15 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
     #combine_by_dir_surveys_part()
     #browser()
     
-    test_filenames2_zip <- combine_by_dir_surveys_part(list_in_dir_zip[11],
+    #Testing error for 4 and 42, four errors on 46 zip files
+    
+    #[[42]]
+    #[1] "Error in type.convert(data[[i]], as.is = as.is[i], dec = dec, numerals = numerals,  : \n  invalid multibyte string at '<b0>'\n"
+    #attr(,"class")
+    #[1] "try-error"
+    #attr(,"condition")
+    #<simpleError in type.convert(data[[i]], as.is = as.is[i], dec = dec, numerals = numerals,     na.strings = character(0L)): invalid multibyte string at '<b0>'>
+    test_filenames2_zip <- combine_by_dir_surveys_part(list_in_dir_zip[4],
                                                    surveys_names = surveys_names,
                                                    list_filenames=list_filenames)
     
@@ -556,7 +586,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
   #test_df <- read.table(test_filename,sep=",",header=T,check.names = F)
   # Start writing to an output file
   if(file.exists("warnings_messages.txt")){
-    file.remove("warnings_messages.txt")
+    file.remove("warning_messages.txt")
   }
   sink('warnings_messages.txt')
   warnings()
