@@ -2,7 +2,7 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 10/06/2017
+## DATE MODIFIED: 10/11/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -292,9 +292,9 @@ survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt=1
   
   df_subset <- df_subset[with(df_subset, order(filenames)), ]
   
-  list_df <-lapply(df_subset$filenames,FUN=function(x){read.table(x,sep=";",header=T)})
-  df_tmp_val <- read.table(df_subset$filenames[1],sep=";")
-  df_tmp_val <- read.table(df_subset$filenames[1],sep=";",header=T)
+  #list_df <-lapply(df_subset$filenames,FUN=function(x){read.table(x,sep=";",header=T)})
+  #df_tmp_val <- read.table(df_subset$filenames[1],sep=";")
+  #df_tmp_val <- read.table(df_subset$filenames[1],sep=";",header=T)
   #this gets the following error:
   #Error in type.convert(data[[i]], as.is = as.is[i], dec = dec, numerals = numerals,  : 
   #                        invalid multibyte string at '<b0>'
@@ -306,7 +306,8 @@ survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt=1
   #of rows equals to zero then the function will attempt to read the file
   #again using "latin1" file encoding
   
-                        
+  list_df <-lapply(df_subset$filenames,FUN=read_file_feed2go)
+    
                           
   ### Now add identifier column to keep track of record origin
   
@@ -522,7 +523,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
   ##########
   ## Step 2
   
-  browser()
+  #browser()
   
   if(combine_by_dir==T){
     
@@ -576,12 +577,12 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
   ### Step 3
   
   ##### Now loop through and bind data.frames
-  browser()
+  #browser()
   
   #undebug(combine_by_id_survey)
   ## Suvey_names 2 does not work: need to check when using option combine by dir
   #test_filename<- combine_by_id_survey(2,surveys_names,list_filenames2,out_suffix,out_dir)
-  test_filename <- combine_by_id_survey(3,surveys_names,list_filenames2,num_cores,out_suffix,out_dir)
+  #test_filename <- combine_by_id_survey(3,surveys_names,list_filenames2,num_cores,out_suffix,out_dir)
   
   #test_df <- read.table(test_filename,sep=",",header=T,check.names = F)
   # Start writing to an output file
