@@ -2,7 +2,7 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 10/11/2017
+## DATE MODIFIED: 10/12/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -308,7 +308,42 @@ survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt=1
   
   list_df <-lapply(df_subset$filenames,FUN=read_file_feed2go)
     
-                          
+  if(warnings)
+  df <- try(read.table(in_filename,sep=";",fill=T,
+                       header=T, 
+                       quote = "",
+                       stringsAsFactors = F,
+                       #fileEncoding="UTF-8",
+                       check.names = F))
+  df <- tryCatch(read.table(in_filename,sep=";",fill=T,
+                       header=T, 
+                       quote = "",
+                       stringsAsFactors = F,
+                       #fileEncoding="UTF-8",
+                       check.names = F))
+  
+  
+  #result = tryCatch({
+  #  expr
+  #}, warning = function(w) {
+  #  warning-handler-code
+  #}, error = function(e) {
+  #  error-handler-code
+  #}, finally = {
+  #  cleanup-code
+  #}
+
+  #result = tryCatch({
+  #  expr
+  #}, warning = function(w) {
+  #  warning-handler-code
+  #}, error = function(e) {
+  #  error-handler-code
+  #}, finally = {
+  #  cleanup-code
+  #}
+            
+  in_filename <- df_subset$filenames[1]
   ### Now add identifier column to keep track of record origin
   
   #repeat filename to fill in new columns with ID
@@ -472,6 +507,7 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   list_df_col_combined <- mclapply(list_out_filenames,
                                    FUN= survey_combine_by_column,
                                    df_data=df_test,
+                                   method_opt=1,
                                    mc.preschedule = FALSE,
                                    mc.cores=num_cores
                                    )
@@ -523,7 +559,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
   ##########
   ## Step 2
   
-  #browser()
+  browser()
   
   if(combine_by_dir==T){
     
@@ -577,7 +613,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
   ### Step 3
   
   ##### Now loop through and bind data.frames
-  #browser()
+  browser()
   
   #undebug(combine_by_id_survey)
   ## Suvey_names 2 does not work: need to check when using option combine by dir

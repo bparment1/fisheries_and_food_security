@@ -74,7 +74,7 @@ out_dir <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/work
 num_cores <- 2 #param 8
 create_out_dir_param=TRUE # param 9
 
-out_suffix <-"processing_fisheries_madagascar_10062017" #output suffix for the files and ouptut folder #param 12
+out_suffix <-"processing_fisheries_madagascar_10112017" #output suffix for the files and ouptut folder #param 12
 unzip_files <- T #param 15
 
 survey_names_updated <-  c("Fahasalamana",
@@ -150,23 +150,6 @@ if(unzip_files==T){
   
 names(list_lf_r) <- basename(lf_zip)
 
-#check dir: data not aggregated
-#Feed2Go_csv_20161102123979100
-
-### Reading in all the datasets and summarizing information
-
-#quick test of reading in some data
-#undebug(summary_data_table)
-#test_summary <- summary_data_table(list_lf_r[[24]])
-#test_summary <- summary_data_table(list_lf_r[[1]][1])
-#test_df <- read.table(list_lf_r[[24]][1],sep=";",header=T)
-#test_df <- read.table(list_lf_r[[1]][1],sep=";",header=T)
-#test_df <- read.table(list_lf_r[[24]][1],sep=";",header=T)
-
-#debug(summary_data_table)
-#test_summary <- summary_data_table(unlist(list_lf_r)[98])
-#"Feed2Go_csv_20160902074190400/Fahasalamana Aout 2_20160902074130802.csv"
-
 #names(test_summary)
 
 list_obj_summary <- mclapply(list_lf_r, 
@@ -206,15 +189,6 @@ basename(list_filenames)
 list_in_dir_zip <- unique(dirname(list_filenames))
 
 
-### First go through all the folders/dirs
-#for(i in 1:in_dir_zip){
-#  if 1,2,3
-#  
-#}
-
-
-#list_combined_df_file_ID <- strsplit(list_filenames," ")
-
 #list_combined_df_file_ID[[2]]
 #list_ID_char <- mclapply(1:length(list_combined_df_file_ID),
 #                         FUN=function(i){list_combined_df_file_ID[[i]][1]},
@@ -235,12 +209,6 @@ list_in_dir_zip <- unique(dirname(list_filenames))
 #Vola isambolana
 
 
-#grep("Karazan-tsakafo",list_filenames,value = T)
-
-#, Laoko, Mpanjono
-#combine_survey_by_colum <- 
-  
-
 #undebug(combine_by_surveys)
 #list_survey_df_filename <- combine_by_surveys(list_filenames,surveys_names=NULL,num_cores,out_suffix,out_dir)
 list_survey_df_filename <- combine_by_surveys(list_filenames,
@@ -249,14 +217,8 @@ list_survey_df_filename <- combine_by_surveys(list_filenames,
                                               combine_by_dir=T,
                                               out_suffix,out_dir)
 
-#> test <- combine_by_surveys(list_filenames,surveys_names,num_cores,out_suffix,out_dir)
-#Warning message:
-#  In mclapply(1:length(surveys_names), FUN = combine_by_id_survey,  :
-#                7 function calls resulted in an error
-#> test
-#NULL
+survey2_df <- read.table(list_survey_df_filename[7],sep=",",header=T,check.names = F,fill=T)
 
-survey2_df <- read.table(list_survey_df_filename[2],sep=",",header=T,check.names = F)
 survey2_df <- read.table(list_survey_df_filename[3],sep=",",header=T,check.names = F)
 
 ############################ END OF SCRIPT #####################################
