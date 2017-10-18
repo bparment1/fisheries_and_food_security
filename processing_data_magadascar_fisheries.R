@@ -2,13 +2,13 @@
 ## Importing and processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 10/12/2017
+## DATE MODIFIED: 10/18/2017
 ## AUTHORS: Benoit Parmentier 
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
 ## TO DO:
 ##
-## COMMIT: adding option to read in survey files with both UTF-8 and latin1
+## COMMIT: combine by column option for avy files added and tested
 ##
 ## Links to investigate:
 
@@ -61,7 +61,7 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_madagascar_fisheries_functions_10122017.R" #PARAM 1
+function_processing_data <- "processing_data_madagascar_fisheries_functions_10182017.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
 source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
@@ -74,7 +74,7 @@ out_dir <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/work
 num_cores <- 2 #param 8
 create_out_dir_param=TRUE # param 9
 
-out_suffix <-"processing_fisheries_madagascar_10122017" #output suffix for the files and ouptut folder #param 12
+out_suffix <-"processing_fisheries_madagascar_10182017" #output suffix for the files and ouptut folder #param 12
 unzip_files <- T #param 15
 
 survey_names_updated <-  c("Fahasalamana",
@@ -84,6 +84,10 @@ survey_names_updated <-  c("Fahasalamana",
                           "Measure Sakafo",
                           "Mpanjono",
                           "Vola isambolana")
+
+combine_by_dir <- TRUE #if TRUE then examine in each directory if files are split (keyword "avy") in parts and/or month
+
+combine_option <- "byrow"
 
 ############## START SCRIPT ############################
 
@@ -214,8 +218,10 @@ list_in_dir_zip <- unique(dirname(list_filenames))
 list_survey_df_filename <- combine_by_surveys(list_filenames,
                                               surveys_names=survey_names_updated,
                                               num_cores,
-                                              combine_by_dir=T,
-                                              out_suffix,out_dir)
+                                              combine_by_dir=combine_by_dir,
+                                              combine_option=combine_option,
+                                              out_suffix,
+                                              out_dir)
 
 survey2_df <- read.table(list_survey_df_filename[7],sep=",",header=T,check.names = F,fill=T)
 
