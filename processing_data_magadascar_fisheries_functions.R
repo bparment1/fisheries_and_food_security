@@ -2,7 +2,7 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 10/12/2017
+## DATE MODIFIED: 10/18/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -276,7 +276,7 @@ get_val_present <- function(i,df_strings){
   return(val_present)
 }
 
-survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt=1){
+survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt="byrow"){
   #
   # This function Combines survey by column based on list of files defined in data.frame
   ##Inputs:
@@ -308,7 +308,7 @@ survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt=1
   
   list_df <-lapply(df_subset$filenames,FUN=read_file_feed2go)
     
-  if(warnings)
+  #if(warnings)
   df <- try(read.table(in_filename,sep=";",fill=T,
                        header=T, 
                        quote = "",
@@ -376,10 +376,15 @@ survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt=1
   
   ### Prepare 
   
-  if(method_opt==1){
+  #byrow is option 1
+  #bycolumn is option 2
+  
+  if(method_opt=="byrow"){
     df_subset_combined <- df_subset_combined_method1
     out_filename <- out_filenames_selected_method1
-  }else{
+  }
+  
+  if(method_opt=="bycolumn"){
     df_subset_combined <- df_subset_combined_method2
     out_filename <- out_filenames_selected_method2
   }
@@ -389,26 +394,43 @@ survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt=1
   
 }
 
-combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames){
+combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames,combine_option="byrow",out_dir=NULL){
+  #
   # This functions combines files of surveys using survey names, common dir and date information.
   # The first step is to identify for each directory:
   # 1) the existence of multiple parts for each month and survey - this is done by identifying the presence of "avy" 
   #    and months in French, English, Malagasy, upper and lower cases
   # 2) Grouping files by survey names, common dates and common directory
-  # 3) Binding by column (wide format) the information
+  # 3) Binding by column (wide format) the information or by row (see combine_option)
   # 4) return the list of files were combine by column for further processing
   
   ##### INPUTS
+  #
   # 1) in_dir_zip: input directory used to group files to combine
   # 2) surveys_names: survey id keywords used in the combine process
   # 3) list_filenames: input file names from survey app
+  # 4) combine_option:
+  # 5) out_dir:
+  # 4) combine_option: "byrow" or "bycolum", combine files splitted using byrow or by colum
+  #                     - byrow: removes duplicate columns, add NA in missing
+  #                     - bycolumn: keeps all columns even if duplicate, ad NA in mssing
+  # ) out_suffix: if NULL, empty string
+  # 5) out_dir: if NULL, defaults to current directory
+  
+  #
   ##### OUTPUTS
+  #
   # 1) list_filenames2: output file name combined by survey names and parts "avy" as well as months
+  
   
   ###### Begin script ##########
   
   ###############
   ### Step 1:  Subset relevant columns
+  
+  if(is.null(out_dir)){
+    out_dir="."
+  }
   
   list_filenames_subset <- grep(in_dir_zip,list_filenames,invert=F,value=T)
 
@@ -483,8 +505,9 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   
   #concatenate survey id with month, this is the unit used to combine
   #drop all rows without "avy"
-
-  df_strings$out_filenames <- file.path(out_dir,paste0(df_strings$group_id,"_",in_dir_zip,".csv"))
+  out_filenames <- paste0(df_strings$group_id,"_",in_dir_zip,".csv")
+  
+  df_strings$out_filenames <- file.path(out_dir,out_filenames)
   
   df_strings[df_strings$avy==-1,]$out_filenames <- file.path(out_dir,in_dir_zip,df_strings[df_strings$avy==-1,]$filenames)
   
@@ -501,13 +524,20 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   #### Step  8: Combine files by group id
   
   #undebug(survey_combine_by_column)
-  list_df_col_combined <- survey_combine_by_column(list_out_filenames[4],df_data=df_test)
+  list_df_col_combined <- survey_combine_by_column(list_out_filenames[4],
+                                                   df_data=df_test,
+                                                   method_opt="byrow")
   
   list_df_col_combined <- lapply(list_out_filenames,FUN= survey_combine_by_column,df_data=df_test)
+  
+  #byrow is option 1
+  #bycolumn is option 2
+  #combine_option <- c("byrow")
+  
   list_df_col_combined <- mclapply(list_out_filenames,
                                    FUN= survey_combine_by_column,
                                    df_data=df_test,
-                                   method_opt=1,
+                                   method_opt=combine_option,
                                    mc.preschedule = FALSE,
                                    mc.cores=num_cores
                                    )
@@ -522,19 +552,29 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames)
   return(list_filenames2)
 }
 
-
+###############################
 ### THis is the main function using all others above
 
-combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_dir=T,out_suffix="",out_dir="."){
+combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_by_dir=T,combine_option="byrow",out_suffix=NULL,out_dir=NULL){
   # This functions combines data based on the survey names. 
   # Data is combined by row using input files.
   #
   ##### INPUTS
-  # 1) in_dir_zip: input directory used to group files to combine
+  # 1) list_filenames: input file names from survey app
   # 2) surveys_names: survey id keywords used in the combine process
-  # 3) list_filenames: input file names from survey app
+  #                   if NULL, survey names are found from the names
+  # 3) num_cores: number of cores to use when combine files, default to 1 in case of no multicores system
+  # 4) combine_by_dir: if TRUE, combine files that are splitted using "avy" and monthly names
+  # 5) combine_option: "byrow" or "bycolum", combine files splitted using byrow or by colum
+  #                     - byrow: removes duplicate columns, add NA in missing
+  #                     - bycolumn: keeps all columns even if duplicate, ad NA in mssing
+  # 6) out_suffix: if NULL, empty string
+  # 7) out_dir: if NULL, defaults to current directory
+  #
   ##### OUTPUTS
-  # 1) list_filenames2: output file name combined by survey names and parts "avy" as well as months
+  #
+  # 1) list_survey_df: names of output files with combined data by surveys 
+  #
   
   ####### Begin script ##########
   
@@ -587,18 +627,22 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores,combine_by_
     #[1] "try-error"
     #attr(,"condition")
     #<simpleError in type.convert(data[[i]], as.is = as.is[i], dec = dec, numerals = numerals,     na.strings = character(0L)): invalid multibyte string at '<b0>'>
+    
     test_filenames2_zip <- combine_by_dir_surveys_part(list_in_dir_zip[4],
                                                    surveys_names = surveys_names,
-                                                   list_filenames=list_filenames)
+                                                   list_filenames=list_filenames,
+                                                   combine_option=combine_option,
+                                                   out_dir=NULL)
     
     list_filenames2 <- mclapply(list_in_dir_zip,
                                 FUN=combine_by_dir_surveys_part,
                                 surveys_names = surveys_names,
                                 list_filenames=list_filenames,
+                                combine_option=combine_option,
+                                out_dir=out_dir,
                                 mc.preschedule = FALSE,
                                 mc.cores = num_cores)
 
-    
     #Now remove filenames that have been cbind
     #tt <- unlist(list_filenames2)
     list_filenames2 <- unlist(list_filenames2)
