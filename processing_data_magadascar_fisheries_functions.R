@@ -2,14 +2,14 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 10/18/2017
+## DATE MODIFIED: 10/19/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
 ## TO DO:
 ##
-## COMMIT: data processing issues: adding months in Malagasy to resolve errors and case sensitive option
+## COMMIT: change to readfeed2go warning handling option and chekc.names, impact outputs
 ##
 ## Links to investigate:
 
@@ -84,15 +84,21 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
     #df <- read.table(in_filename,sep=";",fill=T,head=T, fileEncoding = "UTF-8")
     df <- try(read.table(in_filename,sep=";",fill=T,
                          header=T, quote = "",
-                         stringsAsFactors = F,fileEncoding="UTF-8"))
+                         stringsAsFactors = F,
+                         fileEncoding="UTF-8",
+                         check.names=F))
     if(nrow(df)==0){
       df <- try(read.table(in_filename,sep=";",fill=T,
                            header=T,quote = "",
-                           stringsAsFactors = F,fileEncoding="latin1"))
+                           stringsAsFactors = F,
+                           fileEncoding="latin1",
+                           check.names=F))
     }
     if(nrow(df)==1){
       df <- try(read.table(in_filename,sep=";",
-                           header=T,stringsAsFactors = F))
+                           header=T,
+                           stringsAsFactors = F,
+                           check.names=F))
     }
     
     #This error is related to some files being encoded in ASCII "latin1", this
@@ -102,7 +108,25 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
     #Error in type.convert(data[[i]], as.is = as.is[i], dec = dec, numerals = numerals,  : 
     #invalid multibyte string at '<b0>'
     
-  }else{
+    ### Handling warning message:
+    warning_messages <- warnings()
+    str_warning <- "incomplete final line found by readTableHeader"
+    #str_warning <- "tt"
+    match_val <- grepl(str_warning,names(warning_messages))
+    if(sum(match_val)>0){ #warning message macthinb
+      df <- try(read.table(in_filename,
+                                sep=";",
+                                fill=T,
+                                header=T, 
+                                quote = "",
+                                stringsAsFactors = F,
+                                #fileEncoding="UTF-8",
+                                check.names = F))
+    }
+
+  }
+  
+  if(!is.null(in_dir)){
     #df <- try(read.table(file.path(in_dir,in_filename),sep=";",fill=T,header=T,
     #                     stringsAsFactors = F,fileEncoding="latin1"))
     df <- try(read.table(file.path(in_dir,in_filename),sep=";",fill=T,
@@ -118,7 +142,26 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
       df <- try(read.table(file.path(in_dir,in_filename),sep=";",
                            header=T,stringsAsFactors = F))
     }
+    
+    ### Handling warning message:
+    warning_messages <- warnings()
+    str_warning <- "incomplete final line found by readTableHeader"
+    #str_warning <- "tt"
+    match_val <- grepl(str_warning,names(warning_messages))
+    if(sum(match_val)>0){ #warning message macthinb
+      df <- try(read.table(file.path(in_dir,in_filename),
+                           sep=";",
+                           fill=T,
+                           header=T, 
+                           quote = "",
+                           stringsAsFactors = F,
+                           #fileEncoding="UTF-8",
+                           check.names = F))
+      
+    }
   }
+  
+  ### return file read in
   return(df)
 }
 
@@ -307,43 +350,31 @@ survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt="
   #again using "latin1" file encoding
   
   list_df <-lapply(df_subset$filenames,FUN=read_file_feed2go)
-    
-  #if(warnings)
-  df <- try(read.table(in_filename,sep=";",fill=T,
-                       header=T, 
-                       quote = "",
-                       stringsAsFactors = F,
-                       #fileEncoding="UTF-8",
-                       check.names = F))
-  df <- tryCatch(read.table(in_filename,sep=";",fill=T,
-                       header=T, 
-                       quote = "",
-                       stringsAsFactors = F,
-                       #fileEncoding="UTF-8",
-                       check.names = F))
-  
-  
-  #result = tryCatch({
-  #  expr
-  #}, warning = function(w) {
-  #  warning-handler-code
-  #}, error = function(e) {
-  #  error-handler-code
-  #}, finally = {
-  #  cleanup-code
-  #}
+  #debug(read_file_feed2go)
 
-  #result = tryCatch({
-  #  expr
-  #}, warning = function(w) {
-  #  warning-handler-code
-  #}, error = function(e) {
-  #  error-handler-code
-  #}, finally = {
-  #  cleanup-code
-  #}
+  #test <- read_file_feed2go(df_subset$filenames[1])  
+  #in_filename <- df_subset$filenames[1]
+  #if(warnings)
+  #this results in 3 lines
+  #df <- tryCatch(read.table(in_filename,
+  #                     sep=";",
+  #                     fill=T,
+  #                     header=T, 
+  #                     quote = "",
+  #                     stringsAsFactors = F,
+  #                    fileEncoding="UTF-8",
+  #                     check.names = F))
+  #This results in 28 lines
+  #df <- tryCatch(read.table(in_filename,
+  #                          sep=";",
+  #                          fill=T,
+  #                          header=T, 
+  #                          quote = "",
+  #                          stringsAsFactors = F,
+  #                          #fileEncoding="UTF-8",
+  #                          check.names = F))
             
-  in_filename <- df_subset$filenames[1]
+  #in_filename <- df_subset$filenames[1]
   ### Now add identifier column to keep track of record origin
   
   #repeat filename to fill in new columns with ID
