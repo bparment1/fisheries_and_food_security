@@ -2,7 +2,7 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 10/19/2017
+## DATE MODIFIED: 11/09/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -56,7 +56,7 @@ library(car)
 
 extract_date_feed2go <- function(string_val){
   
-  #### Extract dates from feed2go files
+  #### Extractb dates from feed2go files
   
   list_str <- strsplit(string_val,"_"); 
   date_val <- list_str[[1]][3]
@@ -349,8 +349,10 @@ survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt="
   #of rows equals to zero then the function will attempt to read the file
   #again using "latin1" file encoding
   
+  
   list_df <-lapply(df_subset$filenames,FUN=read_file_feed2go)
   #debug(read_file_feed2go)
+  #undebug(read_file_feed2go)
 
   #test <- read_file_feed2go(df_subset$filenames[1])  
   #in_filename <- df_subset$filenames[1]
@@ -397,13 +399,19 @@ survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt="
   write.table(df_subset_combined_method1,
               out_filenames_selected_method1,
               sep=";",
-              row.names = FALSE)
+              row.names = FALSE,
+              #fileEncoding = "UTF-8",
+              col.names=T,
+              quote=F)
   
   out_filenames_selected_method2 <- sub("\\.csv$","_bycol.csv",out_filenames_selected)
   write.table(df_subset_combined_method2,
               out_filenames_selected_method2,
               sep=";",
-              row.names = FALSE)
+              row.names = FALSE,
+              #fileEncoding = "UTF-8",
+              col.names=T,
+              quote=F)
   
   ### Prepare 
   
@@ -516,6 +524,7 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames,
   
   #dplyr
   
+  #Missing English month lower case
   list_months_values <- list(English_months_u,French_months_l, French_months_u,Malagasy_months_u,Malagasy_months_l)
   #debug(recode_val_fun)
   month_val_recoded <- recode_val_fun(month_val=month_val,
@@ -546,6 +555,9 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames,
   #### Step 7: Select data to combine: only if "avy" is found in the name
   
   df_test <- df_strings[df_strings$avy>0,]
+  ### Need to check output directory
+  #[16] "./Feed2Go_csv_20160902074190400/./Feed2Go_csv_20160902074190400/Mpanjono 2 avy 2 july_201609020742416016.csv"       
+
   df_test$filenames <- file.path(out_dir,in_dir_zip,df_test$filenames)
   
   group_val <- unique(df_test$group_id)
@@ -598,7 +610,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
   # 4) combine_by_dir: if TRUE, combine files that are splitted using "avy" and monthly names
   # 5) combine_option: "byrow" or "bycolum", combine files splitted using byrow or by colum
   #                     - byrow: removes duplicate columns, add NA in missing
-  #                     - bycolumn: keeps all columns even if duplicate, ad NA in mssing
+  #                     - bycolumn: keeps all columns even if duplicate, add NA in mssing
   # 6) out_suffix: if NULL, empty string
   # 7) out_dir: if NULL, defaults to current directory
   #
@@ -630,7 +642,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
   ##########
   ## Step 2
   
-  browser()
+  #browser()
   
   if(combine_by_dir==T){
     
@@ -659,12 +671,21 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
     #attr(,"condition")
     #<simpleError in type.convert(data[[i]], as.is = as.is[i], dec = dec, numerals = numerals,     na.strings = character(0L)): invalid multibyte string at '<b0>'>
     
+    ### By default byrow and bycolumn are produced but only one file is selected to be combined in the survey name
     test_filenames2_zip <- combine_by_dir_surveys_part(list_in_dir_zip[4],
                                                    surveys_names = surveys_names,
                                                    list_filenames=list_filenames,
-                                                   combine_option=combine_option,
+                                                   combine_option=combine_option, #byrow or bycolumn
                                                    out_dir=NULL)
     
+
+    #Example:
+    #Karazan-tsakafo August_Feed2Go_csv_20160902074190400_byrow.csv
+    #Karazan-tsakafo August_Feed2Go_csv_20160902074190400_bycol.csv
+    #[12] "./Feed2Go_csv_20160902074190400/Vola isambolana Aout_20160902074246308.csv": unmodified file       
+    #5: In read.table(in_filename, sep = ";", fill = T, header = T, quote = "",  :
+    #                   incomplete final line found by readTableHeader on './Feed2Go_csv_20160902074190400/Laoko 2 avy 3 Aout_201609020742078013.csv'
+                     
     list_filenames2 <- mclapply(list_in_dir_zip,
                                 FUN=combine_by_dir_surveys_part,
                                 surveys_names = surveys_names,
