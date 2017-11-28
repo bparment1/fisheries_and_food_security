@@ -56,7 +56,7 @@ library(car)
 
 extract_date_feed2go <- function(string_val){
   
-  #### Extractb dates from feed2go files
+  #### Extract dates from feed2go files
   
   list_str <- strsplit(string_val,"_"); 
   date_val <- list_str[[1]][3]
@@ -167,19 +167,14 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
 
 summary_data_table <- function(list_lf){
   
-  ### This function lists all input files from the Magadascar suvey and generate tables of summary.
+  ### This function lists all input files from the Madagascar survey 
+  ### and generate tables of summary.
+  ### Summary includes number of rows and columns.
   
   
   ##### Begin script #####
   
-  #test_df <- read.table(list_lf[[1]],sep=";",header=T)
-  #debug(read_file_feed2go)
-  #test_df <- read_file_feed2go(list_lf[13])
-  #debug(read_file_feed2go)
-  #list_df <- lapply(list_lf[13],try(read_file_feed2go),out_dir)
   list_df <- lapply(list_lf,read_file_feed2go,out_dir)
-  
-  #test_df2 <- read.table(list_lf[1],sep=";",header=T)
   
   #lapply(list_df,summary_table_df)
   dim_df <- dim_surveys_df(list_df)
@@ -334,9 +329,11 @@ survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt="
   #
   # This function Combines survey by column based on list of files defined in data.frame
   ##Inputs:
-  # 1) out_filenames_selected: output name
-  # 2) df_data:
-  # 3) method_opt:
+  # 1) out_filenames_selected: output names for files being combined
+  # 2) df_data: input data to be combined
+  # 3) method_opt: "byrow" or "bycolum", combine files splitted using byrow or by colum
+  #                     - byrow: removes duplicate columns, add NA in missing
+  #                     - bycolumn: keeps all columns even if duplicate, ad NA in mssing
   ##Outputs:
   # 1) out_filenames_selected: output name (modified from input)
   
@@ -349,38 +346,70 @@ survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt="
   #debug(read_file_feed2go)
   #undebug(read_file_feed2go)
 
-  #in_filename <- df_subset$filenames[1]
-  ### Now add identifier column to keep track of record origin
+  ### Remove quotes in the header first:
+  remove_quotes_header <- function(df_tmp){
+     
+    names_col <- gsub("\"","",names(df_tmp))
+    names(df_tmp) <- noquote(names_col)
+    return(df_tmp)
+  }
   
-  #repeat filename to fill in new columns with ID
-  #list_column_filename <- lapply(1:length(list_df),
-  #                               FUN=function(i,x,y){rep(y[i],nrow(x[[i]]))},x=list_df,y=names(list_df))
-  
-  #df_survey$filename <- unlist(list_column_filename) #adding identifier for table
-  #out_filename <- paste0(surveys_names[i],"_",out_suffix,".txt")
-  #write.table(df_survey,file.path(out_dir,out_filename),sep=",",row.names = F)
+  #debug(remove_quotes_header)
+  #remove_quotes_header(list_df[[1]])
+  #list_df_tmp <- lapply(list_df,FUN=remove_quotes_header)
+  #l_names <- unlist(lapply(list_df,FUN=function(x){names(x)}))
+  #length(unique(l_names)) #should be number of columns for method1
+  #length(l_names) #should be number of columns for method2
   
   #### Now combine by column and row options
+
+  #require(plyr) # requires plyr for rbind.fill()
   
-  l_names <- unlist(lapply(list_df,FUN=function(x){names(x)}))
-  length(unique(l_names)) #should be number of columns for method1
-  length(l_names) #should be number of columns for method2
+  #
+  #https://stackoverflow.com/questions/7962267/cbind-a-df-with-an-empty-df-cbind-fill
+  #cbind_fill <- function(...) {                                                                                                                                                       
+  #  transpoted <- lapply(list(...),t)
+  #  #col_names <-rownames(transpoted)
+  #  transpoted_dataframe <- lapply(transpoted, as.data.frame) 
+  #  df_out <- data.frame(t(rbind.fill(transpoted_dataframe)))
+  #  #names(df_out) <- col_names
+  #  return (df_out)                                                                                                                          
+  #} 
+
+  #modify here
+  cbind_fill <- function(list_df_val){
+    #Function to bind data column-wise.
+    #It is modified from this url:
+    #https://stackoverflow.com/questions/7962267/cbind-a-df-with-an-empty-df-cbind-fill
+    #
+    #INPUTS
+    #1) list_df_val: data.frame list
+    #OUTPUT
+    #1) df_out:
+    #
+    
+    ###### Begin ######
+    
+    transpoted <- lapply(list_df_val,t)
+    col_names <- lapply(transpoted, rownames)
+    transpoted_dataframe <- lapply(transpoted, as.data.frame) 
+    df_out <- data.frame(t(rbind.fill(transpoted_dataframe)))
+    names(df_out) <- unlist(col_names)
+    
+    return (df_out)                                                                                                                          
+  } 
   
-  #use plyr option
-  #test1 <- bind_rows(list_df) #this acts on a list!!!
-  #test2 <- bind_cols(list_df)
-  #test2 <- join(list_df)
-  #test2 <- do.call(_full_join_,list_df)
-  #test2 <- do(full_join,list_df,by=NULL)
-  #test2 <- full_join(list_df[[1]],list_df[[2]])
-  
-  df_subset_combined_method1 <- do.call(rbind.fill,list_df) #294 unique column names, only unique columns are retained
+  df_subset_combined_method1 <- do.call(rbind.fill,list_df_tmp) #294 unique column names, only unique columns are retained
   #use rowr package
-  df_subset_combined_method2 <- do.call(cbind.fill,list_df) # All columns are retained, even duplicates
-                                     
+  #df_subset_combined_method2 <- do.call(cbind.fill,list_df_tmp) # All columns are retained, even duplicates
+  #df_subset_combined_method2 <- do.call(cbind_fill,list_df_tmp) # All columns are retained, even duplicates
+  df_subset_combined_method2 <- cbind_fill(list_df_tmp)
+  rownames(df_subset_combined_method2) <- NULL
+  dim(df_subset_combined_method2)
   # cbind.fill is in rowsr
   # rbind.fill in plyr
   #
+  #for the time being
   
   out_filenames_selected_method1 <- sub("\\.csv$","_byrow.csv",out_filenames_selected)
   write.table(df_subset_combined_method1,
@@ -405,10 +434,10 @@ survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt="
   (l_names)[1:10]
   names(df_subset_combined_method2)[1:10]
   #sub("[\]","",l_names)
-  sub("\\","",l_names) #remove back slashes, note that we 
+  #sub("\\","",l_names) #remove back slashes, note that we 
   #sub("\"","",l_names) #remove back slashes, note that we 
-  l_names1 <- gsub("\"","",l_names) #remove back slashes, note that we 
-  l_names2 <- noquote(l_names1)
+  #l_names1 <- gsub("\"","",l_names) #remove back slashes, note that we 
+  #l_names2 <- noquote(l_names1)
   #l_names3 <- gsub("\"","",l_names2) #remove back slashes, note that we 
   #noquotes(l_names3)
   
@@ -447,8 +476,6 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames,
   # 1) in_dir_zip: input directory used to group files to combine
   # 2) surveys_names: survey id keywords used in the combine process
   # 3) list_filenames: input file names from survey app
-  # 4) combine_option:
-  # 5) out_dir:
   # 4) combine_option: "byrow" or "bycolum", combine files splitted using byrow or by colum
   #                     - byrow: removes duplicate columns, add NA in missing
   #                     - bycolumn: keeps all columns even if duplicate, ad NA in mssing
@@ -493,14 +520,21 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames,
                       "Novembra","novembra")
   ##############
   ###  Step 2: Generate data.frame with combination  "avy" keywords from list of file names from the survey app
-  df_strings <- as.data.frame(sapply(keywords, regexpr, list_filenames_subset, ignore.case=TRUE))
+  df_strings <- as.data.frame(sapply(keywords, 
+                                     regexpr, 
+                                     list_filenames_subset, 
+                                     ignore.case=TRUE))
+  
   df_strings$filenames <- basename(list_filenames_subset)
   
   ##############
   ### Step 3: data.frame with combination months keywords from list of file names from the survey app
   ## use case sensitive option 
   #df_strings_month <- as.data.frame(sapply(keywords_month, regexpr, list_filenames_subset, ignore.case=FALSE))
-  df_strings_month <- as.data.frame(sapply(keywords_month, regexpr, list_filenames_subset, ignore.case=FALSE))
+  df_strings_month <- as.data.frame(sapply(keywords_month, 
+                                           regexpr, 
+                                           list_filenames_subset, 
+                                           ignore.case=FALSE))
   
   #############
   ### Step 4: data.frame with combination survey_name keywords from list of file names from the survey app
@@ -511,19 +545,17 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames,
   #############
   ### Step 5: Combine data.frame keywords in a common data.frame "df_strings"
   
-  survey_val <- unlist(lapply(1:nrow(df_strings_surveys),FUN=get_val_present,df_strings=df_strings_surveys))
+  survey_val <- unlist(lapply(1:nrow(df_strings_surveys),
+                              FUN=get_val_present,df_strings=df_strings_surveys))
   #undebug(get_val_present)
   
   #get_val_present(49,df_strings_month)
-  month_val<- unlist(lapply(1:nrow(df_strings_month),FUN=get_val_present,df_strings=df_strings_month))
+  month_val<- unlist(lapply(1:nrow(df_strings_month),
+                            FUN=get_val_present,df_strings=df_strings_month))
   
   #### Add month and survey info to df_strings
   
   df_strings$filenames <- basename(list_filenames_subset)
-  
-  #dplyr
-  
-  #Missing English month lower case
   list_months_values <- list(English_months_l,English_months_u,French_months_l, French_months_u,Malagasy_months_u,Malagasy_months_l)
   #debug(recode_val_fun)
   month_val_recoded <- recode_val_fun(month_val=month_val,
@@ -548,30 +580,34 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames,
   out_filenames <- paste0(df_strings$group_id,"_",in_dir_zip,".csv")
   
   df_strings$out_filenames <- file.path(out_dir,out_filenames)
-  
   df_strings[df_strings$avy==-1,]$out_filenames <- file.path(out_dir,in_dir_zip,df_strings[df_strings$avy==-1,]$filenames)
   
   ################
   #### Step 7: Select data to combine: only if "avy" is found in the name
   
-  df_test <- df_strings[df_strings$avy>0,]
+  #Selected inputs:
+  df_selected <- df_strings[df_strings$avy>0,]
   ### Need to check output directory
   #[16] "./Feed2Go_csv_20160902074190400/./Feed2Go_csv_20160902074190400/Mpanjono 2 avy 2 july_201609020742416016.csv"       
 
-  df_test$filenames <- file.path(out_dir,in_dir_zip,df_test$filenames)
+  df_selected$filenames <- file.path(out_dir,in_dir_zip,df_selected$filenames)
   
-  group_val <- unique(df_test$group_id)
-  list_out_filenames <- unique(df_test$out_filenames)
+  group_val <- unique(df_selected$group_id) #grouping values 
+  list_out_filenames <- unique(df_selected$out_filenames)
 
   ################
   #### Step  8: Combine files by group id
   
   #undebug(survey_combine_by_column)
   list_df_col_combined <- survey_combine_by_column(list_out_filenames[4],
-                                                   df_data=df_test,
+                                                   df_data=df_selected,
                                                    method_opt="byrow")
   
-  list_df_col_combined <- lapply(list_out_filenames,FUN= survey_combine_by_column,df_data=df_test)
+  list_df_col_combined <- lapply(list_out_filenames,
+                                 FUN= survey_combine_by_column,
+                                 df_data=df_selected,
+                                 method_opt= combine_option
+                                 )
   
   #byrow is option 1
   #bycolumn is option 2
@@ -659,17 +695,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
     list_in_dir_zip <- unique(dirname(list_filenames))
     
     #undebug(combine_by_dir_surveys_part)
-    #combine_by_dir_surveys_part()
     #browser()
-    
-    #Testing error for 4 and 42, four errors on 46 zip files
-    
-    #[[42]]
-    #[1] "Error in type.convert(data[[i]], as.is = as.is[i], dec = dec, numerals = numerals,  : \n  invalid multibyte string at '<b0>'\n"
-    #attr(,"class")
-    #[1] "try-error"
-    #attr(,"condition")
-    #<simpleError in type.convert(data[[i]], as.is = as.is[i], dec = dec, numerals = numerals,     na.strings = character(0L)): invalid multibyte string at '<b0>'>
     
     #debug(combine_by_dir_surveys_part)
     ### By default byrow and bycolumn are produced but only one file is selected to be combined in the survey name
