@@ -2,7 +2,7 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 11/30/2017
+## DATE MODIFIED: 12/05/2017
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -205,6 +205,14 @@ add_single_quote <- function(char_val){
   return(char_val)
 }
 
+### Remove quotes in the header first:
+remove_quotes_header <- function(df_tmp){
+  
+  names_col <- gsub("\"","",names(df_tmp))
+  names(df_tmp) <- noquote(names_col)
+  return(df_tmp)
+}
+
 recode_string_fun <- function(string_input,string_val,string_ref){
   #Take a string input and replaces values given string_values matching reference values (to be recoded)
   #string_input: input vector of character type
@@ -285,11 +293,21 @@ combine_by_id_survey<- function(i,surveys_names,list_filenames,num_cores=1,out_s
   message(paste0("Number of errors when reading files: ",val))
   #this means no try-error
   
-  #dim_list_df <-lapply(list_df,FUN=function(x){dim(x)})
-  #dim_df <- as.data.frame(do.call(rbind,dim_list_df))
+  dim_list_df <-lapply(list_df,FUN=function(x){dim(x)})
+  dim_df <- as.data.frame(do.call(rbind,dim_list_df))
   #range(dim_df$V2,na.rm = T)  
   #histogram(dim_df$V2)
   #View(dim_df)
+  names_list_df <-lapply(list_df,FUN=function(x){names(x)})
+  
+  #check 74, for i=3
+  #survey_selected
+  #[1] "Karazan-tsakafo"
+  #Browse[4]> dim(list_df[[74]])
+  #[1] 157   3
+  l_names <- unlist(names_list_df)
+  l_names_unique <- unique(l_names)
+  
   
   df_survey <- do.call(rbind.fill,list_df)
 
@@ -370,14 +388,6 @@ survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt="
   #debug(read_file_feed2go)
   #undebug(read_file_feed2go)
 
-  ### Remove quotes in the header first:
-  remove_quotes_header <- function(df_tmp){
-     
-    names_col <- gsub("\"","",names(df_tmp))
-    names(df_tmp) <- noquote(names_col)
-    return(df_tmp)
-  }
-  
   #list_df_tmp <- list_df
   list_df_tmp <- lapply(list_df,FUN=remove_quotes_header)
   
@@ -425,16 +435,17 @@ survey_combine_by_column <- function(out_filenames_selected,df_data,method_opt="
   
   if(method_opt=="byrow"){
     df_subset_combined <- df_subset_combined_method1
-    out_filename <- out_filenames_selected_method1
+    out_filename_val <- out_filenames_selected_method1
   }
   
   if(method_opt=="bycolumn"){
     df_subset_combined <- df_subset_combined_method2
-    out_filename <- out_filenames_selected_method2
+    out_filename_val <- out_filenames_selected_method2
+                    #out_filenames_selected_method2
   }
 
   #df_data$
-  return(out_filename)
+  return(out_filename_val)
   
 }
 
@@ -576,15 +587,15 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames,
   #### Step  8: Combine files by group id
   
   #undebug(survey_combine_by_column)
-  list_df_col_combined <- survey_combine_by_column(list_out_filenames[4],
-                                                   df_data=df_selected,
-                                                   method_opt="byrow")
+  #list_df_col_combined <- survey_combine_by_column(list_out_filenames[4],
+  #                                                 df_data=df_selected,
+  #                                                 method_opt="byrow")
   
-  list_df_col_combined <- lapply(list_out_filenames,
-                                 FUN= survey_combine_by_column,
-                                 df_data=df_selected,
-                                 method_opt= combine_option
-                                 )
+  #list_df_col_combined <- lapply(list_out_filenames,
+  #                               FUN= survey_combine_by_column,
+  #                               df_data=df_selected,
+  #                               method_opt= combine_option
+  #                               )
   
   #byrow is option 1
   #bycolumn is option 2
@@ -592,18 +603,21 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames,
   
   list_df_col_combined <- mclapply(list_out_filenames,
                                    FUN= survey_combine_by_column,
-                                   df_data=df_test,
+                                   #df_data=df_test,
+                                   df_data=df_selected,
                                    method_opt=combine_option,
                                    mc.preschedule = FALSE,
                                    mc.cores=num_cores
                                    )
   
   #list_df_col_combined <- lapply(group_val,FUN= survey_combine_by_column,df_data=df_test)
-  names(list_df_col_combined)<- list_out_filenames
+  #names(list_df_col_combined)<- list_out_filenames
   
   #this might need to be changed
-  list_filenames2 <- c(list_df_col_combined,df_strings[df_strings$avy<0,c("out_filenames")])
-  list_filenames2 <- unique(df_strings$out_filenames)
+  #df_selected <- df_strings[df_strings$avy>0,]
+  
+  list_filenames2 <- c(unlist(list_df_col_combined),df_strings[df_strings$avy<0,c("out_filenames")])
+  #list_filenames2 <- unique(df_strings$out_filenames)
   
   return(list_filenames2)
 }
@@ -702,6 +716,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
     #Now remove filenames that have been cbind
     #tt <- unlist(list_filenames2)
     list_filenames2 <- unlist(list_filenames2)
+    #maybe save files here
     #
   }else{
     #list_filenames2 <- list_filenames
@@ -751,7 +766,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
                              mc.preschedule = F,
                              mc.cores = num_cores)
   
-  list_survey_df[[3]]
+  #list_survey_df[[3]]
   #index_error <- lapply(list_survey_df,FUN=function(x){!inherits(x,"try-error")})
   #test_df <- read.table(test_filename,sep=",",header=T,check.names = F)
   list_survey_df <- file.path(out_dir,unlist(list_survey_df))

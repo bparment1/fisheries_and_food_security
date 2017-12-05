@@ -2,7 +2,7 @@
 ## Importing and processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 11/29/2017
+## DATE MODIFIED: 12/04/2017
 ## AUTHORS: Benoit Parmentier 
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
@@ -61,7 +61,7 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_madagascar_fisheries_functions_11292017.R" #PARAM 1
+function_processing_data <- "processing_data_madagascar_fisheries_functions_12042017.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
 source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
@@ -74,7 +74,7 @@ out_dir <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/work
 num_cores <- 2 #param 8
 create_out_dir_param=TRUE # param 9
 
-out_suffix <-"processing_fisheries_madagascar_11282017" #output suffix for the files and ouptut folder #param 12
+out_suffix <-"processing_fisheries_madagascar_12042017" #output suffix for the files and ouptut folder #param 12
 unzip_files <- T #param 15
 
 survey_names_updated <-  c("Fahasalamana",
