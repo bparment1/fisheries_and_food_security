@@ -2,7 +2,7 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 12/05/2017
+## DATE MODIFIED: 01/31/2018
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -80,6 +80,8 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
   
   ##### Begin script ######
   
+  #### Part 1: attempt to read in data:
+  
   if(is.null(in_dir)){
     #df <- read.table(in_filename,sep=";",fill=T,head=T, fileEncoding = "UTF-8")
     df <- try(read.table(in_filename,sep=";",fill=T,
@@ -98,6 +100,17 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
       df <- try(read.table(in_filename,sep=";",
                            header=T,
                            stringsAsFactors = F,
+                           check.names=F))
+    }
+    
+    ###### Part 2: deal with error and/or warning
+    
+    ### Deal with eror: in case it appears read again with option 1:
+    if(class(df)=="try-error"){
+      df <- try(read.table(in_filename,sep=";",fill=T,
+                           header=T, quote = "",
+                           stringsAsFactors = F,
+                           fileEncoding="UTF-8",
                            check.names=F))
     }
     
@@ -142,6 +155,25 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
       df <- try(read.table(file.path(in_dir,in_filename),sep=";",
                            header=T,stringsAsFactors = F))
     }
+    
+    
+    ###### Part 2: deal with error and/or warning
+    
+    ### Deal with eror: in case it appears read again with option 1:
+    if(class(df)=="try-error"){
+      df <- try(read.table(in_filename,sep=";",fill=T,
+                           header=T, quote = "",
+                           stringsAsFactors = F,
+                           fileEncoding="UTF-8",
+                           check.names=F))
+    }
+    
+    #This error is related to some files being encoded in ASCII "latin1", this
+    #encoding is being replaced by the newer UTF-8 iso standard
+    #In read.table the fileEncoding option is replaced from "UTF-8" by "latin1", 
+    #Adding encoding resolved the following error:
+    #Error in type.convert(data[[i]], as.is = as.is[i], dec = dec, numerals = numerals,  : 
+    #invalid multibyte string at '<b0>'
     
     ### Handling warning message:
     warning_messages <- warnings()
@@ -292,7 +324,14 @@ combine_by_id_survey<- function(i,surveys_names,list_filenames,num_cores=1,out_s
   val <- sum(unlist(lapply(list_df,function(x){inherits(x,"try-error")})))
   message(paste0("Number of errors when reading files: ",val))
   #this means no try-error
+  which(test_error==1)
+  #showing file 76
+  #list_lf[[76]]
+  #View(list_df[[76]])
+  #debug(read_file_feed2go)
+  #df_val <- read_file_feed2go(list_lf[76]) # use default option
   
+
   dim_list_df <-lapply(list_df,FUN=function(x){dim(x)})
   dim_df <- as.data.frame(do.call(rbind,dim_list_df))
   #range(dim_df$V2,na.rm = T)  
@@ -587,9 +626,9 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames,
   #### Step  8: Combine files by group id
   
   #undebug(survey_combine_by_column)
-  #list_df_col_combined <- survey_combine_by_column(list_out_filenames[4],
-  #                                                 df_data=df_selected,
-  #                                                 method_opt="byrow")
+  list_df_col_combined <- survey_combine_by_column(list_out_filenames[1],
+                                                   df_data=df_selected,
+                                                   method_opt="byrow")
   
   #list_df_col_combined <- lapply(list_out_filenames,
   #                               FUN= survey_combine_by_column,
@@ -669,7 +708,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
   ##########
   ## Step 2
   
-  browser()
+  #browser()
   
   if(combine_by_dir==T){
     
@@ -690,20 +729,20 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
     
     #debug(combine_by_dir_surveys_part)
     ### By default byrow and bycolumn are produced but only one file is selected to be combined in the survey name
-    #test_filenames2_zip <- combine_by_dir_surveys_part(list_in_dir_zip[4],
-    #                                               surveys_names = surveys_names,
-    #                                               list_filenames=list_filenames,
-    #                                              combine_option=combine_option, #byrow or bycolumn
-    #                                              out_dir=out_dir)
+    test_filenames2_zip <- combine_by_dir_surveys_part(list_in_dir_zip[27],
+                                                   surveys_names = surveys_names,
+                                                   list_filenames=list_filenames,
+                                                  combine_option=combine_option, #byrow or bycolumn
+                                                  out_dir=out_dir)
     
 
     #Example:
-    #Karazan-tsakafo August_Feed2Go_csv_20160902074190400_byrow.csv
-    #Karazan-tsakafo August_Feed2Go_csv_20160902074190400_bycol.csv
-    #[12] "./Feed2Go_csv_20160902074190400/Vola isambolana Aout_20160902074246308.csv": unmodified file       
-    #5: In read.table(in_filename, sep = ";", fill = T, header = T, quote = "",  :
-    #                   incomplete final line found by readTableHeader on './Feed2Go_csv_20160902074190400/Laoko 2 avy 3 Aout_201609020742078013.csv'
-                     
+    #This is an example of problematic output:
+    #Karazan-tsakafo June_Feed2Go_csv_20160630102140700_byrow.csv
+    #Find "Feed2Go_csv_20160630102140700"   
+    #which(match(list_in_dir_zip,"Feed2Go_csv_20160630102140700")==1)
+    #This is 27
+    
     list_filenames2 <- mclapply(list_in_dir_zip,
                                 FUN=combine_by_dir_surveys_part,
                                 surveys_names = surveys_names,
@@ -712,7 +751,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
                                 out_dir=out_dir,
                                 mc.preschedule = FALSE,
                                 mc.cores = num_cores)
-
+    
     #Now remove filenames that have been cbind
     #tt <- unlist(list_filenames2)
     list_filenames2 <- unlist(list_filenames2)
@@ -728,7 +767,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
   ### Step 3
   
   ##### Now loop through and bind data.frames
-  browser()
+  #browser()
   
   #undebug(combine_by_id_survey)
   ## Suvey_names 2 does not work: need to check when using option combine by dir
@@ -749,7 +788,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
   #using mclapply and could go over the number of cores
   #debug(combine_by_id_survey)
 
-  list_survey_df <- combine_by_id_survey(3,
+  list_survey_df6 <- combine_by_id_survey(6,
                              surveys_names = surveys_names,
                              list_filenames=list_filenames2,
                              num_cores= num_cores_tmp,
