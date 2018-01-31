@@ -2,7 +2,7 @@
 ## Importing and processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 12/05/2017
+## DATE MODIFIED: 01/31/2018
 ## AUTHORS: Benoit Parmentier 
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
@@ -61,7 +61,7 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_madagascar_fisheries_functions_12052017.R" #PARAM 1
+function_processing_data <- "processing_data_madagascar_fisheries_functions_01312018.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
 source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
@@ -74,7 +74,7 @@ out_dir <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/work
 num_cores <- 2 #param 8
 create_out_dir_param=TRUE # param 9
 
-out_suffix <-"processing_fisheries_madagascar_12052017" #output suffix for the files and ouptut folder #param 12
+out_suffix <-"processing_fisheries_madagascar_01312018" #output suffix for the files and ouptut folder #param 12
 unzip_files <- T #param 15
 
 survey_names_updated <-  c("Fahasalamana",
@@ -143,7 +143,7 @@ write.table(df_zip,file=df_zip_fname,sep=",")
 
 ###### unzip files:
 
-#if unzip_files is TRUE
+##if unzip_files is TRUE
 if(unzip_files==T){
   nb_zipped_file <- length(lf_zip)
   list_lf_r <- vector("list",length=nb_zipped_file)
@@ -154,7 +154,7 @@ if(unzip_files==T){
     list_lf_r[[i]] <- lf_r
   }
 }
-  
+
 names(list_lf_r) <- basename(lf_zip)
 
 #undebug(summary_data_table)
@@ -178,6 +178,30 @@ View(summary_df)
 #note we have 1369 files instead of 1006 before.
 out_filename <- paste0("summary_table_df_",out_suffix,".txt")
 write.table(summary_df,file= file.path(out_dir,out_filename),sep=",")
+
+#> range(summary_df$ncol)
+#[1]   1 153
+#> table(summary_df$ncol)
+
+#1  77  79  87 133 134 138 141 143 145 148 149 151 153 
+#12  80   8  41 122 123 121 121 122  93 154 129 121 122 
+### --> May be useful to check the 12 files that only have one column!!!!
+
+#> table(summary_df$nrow)
+
+
+#1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20 
+#41  36  19  21  25  38  20  28  20  18  10   5   6  15  28  10  23   7   5  24 
+#21  22  23  24  25  26  27  28  30  31  32  33  34  35  36  37  38  39  40  41 
+#9  19  37  26  30  28  31  37   6  25   4  24  12   8   9  17  19  26  10   8 
+#42  43  44  45  46  47  48  49  50  51  52  53  54  55  56  57  58  59  60  61 
+#10   9   5  14   3  11   7  31 115  79  45  26  23  19  10   7   2  16   2   9 
+#62  63  64  65  66  67  71  72  74  77  82  86  89  92  96  98  99 104 105 106 
+#4   4   2   4   5   3   5   2   1   4   1   2   3   4   1   6   3   1   2   4 
+#107 112 113 115 117 119 121 123 124 125 127 128 131 132 135 136 138 139 144 146 
+#3   4   5   1   3   3   5   2   2   2   3   3   1   3   3   3   5   3   2   5 
+#147 148 152 155 156 159 163 164 166 169 170 173 175 195 223 
+#2   1   1   1   3   1   1   1   1   1   1   1   1   1   3 
 
 ## To combine data: use
 #1) extracted names from the file names (use first char??)
@@ -215,3 +239,28 @@ survey2_df <- read.table(list_survey_df_filename[7],sep=",",header=T,check.names
 survey2_df <- read.table(list_survey_df_filename[3],sep=",",header=T,check.names = F)
 
 ############################ END OF SCRIPT #####################################
+
+###to look for:
+Hi Benoit,
+
+Thanks for updating the scripts, great work! I ran if for the new updated
+dataset in October. The whole file runs, but I noticed the following issues:
+  
+  1) When compiling the "Mpanjono" surveys, I get the following error: All
+inputs to rbind.fill must be data.frames (attached a screenshot)
+2) The problematic dataset you flagged, "Karazan-tsakafo
+June_Feed2Go_csv_20160630102140700_byrow.csv" is included in the dataset
+but it's data is offset. It's not clear why, but given that it's a single
+dataset I can try and fix that on my end.
+3) Finally, I've noticed that some data entries have commas in them, which
+means they are read as separate variables, leading to offsetting. I don't
+know how we would deal with this, though maybe we can exploit the //" 
+feature that delimits the data.
+
+That being said, I think the script looks great. I feel comfortable
+tackling 2) and 3) on my own. if you have time it'd be great if you could
+look into 1).
+
+Thanks!
+  
+  Erwin
