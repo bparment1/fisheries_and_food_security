@@ -179,29 +179,7 @@ View(summary_df)
 out_filename <- paste0("summary_table_df_",out_suffix,".txt")
 write.table(summary_df,file= file.path(out_dir,out_filename),sep=",")
 
-#> range(summary_df$ncol)
-#[1]   1 153
-#> table(summary_df$ncol)
-
-#1  77  79  87 133 134 138 141 143 145 148 149 151 153 
-#12  80   8  41 122 123 121 121 122  93 154 129 121 122 
-### --> May be useful to check the 12 files that only have one column!!!!
-
-#> table(summary_df$nrow)
-
-
-#1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20 
-#41  36  19  21  25  38  20  28  20  18  10   5   6  15  28  10  23   7   5  24 
-#21  22  23  24  25  26  27  28  30  31  32  33  34  35  36  37  38  39  40  41 
-#9  19  37  26  30  28  31  37   6  25   4  24  12   8   9  17  19  26  10   8 
-#42  43  44  45  46  47  48  49  50  51  52  53  54  55  56  57  58  59  60  61 
-#10   9   5  14   3  11   7  31 115  79  45  26  23  19  10   7   2  16   2   9 
-#62  63  64  65  66  67  71  72  74  77  82  86  89  92  96  98  99 104 105 106 
-#4   4   2   4   5   3   5   2   1   4   1   2   3   4   1   6   3   1   2   4 
-#107 112 113 115 117 119 121 123 124 125 127 128 131 132 135 136 138 139 144 146 
-#3   4   5   1   3   3   5   2   2   2   3   3   1   3   3   3   5   3   2   5 
-#147 148 152 155 156 159 163 164 166 169 170 173 175 195 223 
-#2   1   1   1   3   1   1   1   1   1   1   1   1   1   3 
+table(summary_df$nrow) # suggest to look at files with 1 to three rows
 
 ## To combine data: use
 #1) extracted names from the file names (use first char??)
