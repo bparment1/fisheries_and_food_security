@@ -2,7 +2,7 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 01/31/2018
+## DATE MODIFIED: 02/15/2018
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -658,7 +658,18 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames,
   list_filenames2 <- c(unlist(list_df_col_combined),df_strings[df_strings$avy<0,c("out_filenames")])
   #list_filenames2 <- unique(df_strings$out_filenames)
   
-  return(list_filenames2)
+  df_strings$in_dir_zip <- in_dir_zip
+  unique(df_strings$out_filenames)
+  length(list_filenames2)
+  
+  ### This is to keep track fo changes from original files
+  df_strings$step1 <- df_strings$avy>0 #if greater than zero file has been modified!
+  
+  ### return obj
+  combine_obj <- list("df_strings",list_filenames2)
+  names(combine_obj) <- c("df_strings","list_filenames2")
+  
+  return(combine_obj)
 }
 
 ###############################
@@ -732,10 +743,11 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
     test_filenames2_zip <- combine_by_dir_surveys_part(list_in_dir_zip[27],
                                                    surveys_names = surveys_names,
                                                    list_filenames=list_filenames,
-                                                  combine_option=combine_option, #byrow or bycolumn
-                                                  out_dir=out_dir)
+                                                   combine_option=combine_option, #byrow or bycolumn
+                                                   out_dir=out_dir)
     
-
+    length(test_filenames2_zip)
+    
     #Example:
     #This is an example of problematic output:
     #Karazan-tsakafo June_Feed2Go_csv_20160630102140700_byrow.csv
@@ -743,6 +755,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
     #which(match(list_in_dir_zip,"Feed2Go_csv_20160630102140700")==1)
     #This is 27
     
+    #Note list_filenames2 will be different!!! since it 
     list_filenames2 <- mclapply(list_in_dir_zip,
                                 FUN=combine_by_dir_surveys_part,
                                 surveys_names = surveys_names,
