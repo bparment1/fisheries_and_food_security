@@ -2,13 +2,13 @@
 ## Importing and processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 01/31/2018
+## DATE MODIFIED: 02/16/2018
 ## AUTHORS: Benoit Parmentier 
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
 ## TO DO:
 ##
-## COMMIT: clean up and testing
+## COMMIT: changes to keep file separator consistent with ;
 ##
 ## Links to investigate:
 
@@ -61,7 +61,7 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_madagascar_fisheries_functions_01312018.R" #PARAM 1
+function_processing_data <- "processing_data_madagascar_fisheries_functions_02162018.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
 source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
@@ -74,7 +74,7 @@ out_dir <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/work
 num_cores <- 2 #param 8
 create_out_dir_param=TRUE # param 9
 
-out_suffix <-"processing_fisheries_madagascar_01312018" #output suffix for the files and ouptut folder #param 12
+out_suffix <-"processing_fisheries_madagascar_02152018" #output suffix for the files and ouptut folder #param 12
 unzip_files <- T #param 15
 
 survey_names_updated <-  c("Fahasalamana",
@@ -218,27 +218,3 @@ survey2_df <- read.table(list_survey_df_filename[3],sep=",",header=T,check.names
 
 ############################ END OF SCRIPT #####################################
 
-###to look for:
-Hi Benoit,
-
-Thanks for updating the scripts, great work! I ran if for the new updated
-dataset in October. The whole file runs, but I noticed the following issues:
-  
-  1) When compiling the "Mpanjono" surveys, I get the following error: All
-inputs to rbind.fill must be data.frames (attached a screenshot)
-2) The problematic dataset you flagged, "Karazan-tsakafo
-June_Feed2Go_csv_20160630102140700_byrow.csv" is included in the dataset
-but it's data is offset. It's not clear why, but given that it's a single
-dataset I can try and fix that on my end.
-3) Finally, I've noticed that some data entries have commas in them, which
-means they are read as separate variables, leading to offsetting. I don't
-know how we would deal with this, though maybe we can exploit the //" 
-feature that delimits the data.
-
-That being said, I think the script looks great. I feel comfortable
-tackling 2) and 3) on my own. if you have time it'd be great if you could
-look into 1).
-
-Thanks!
-  
-  Erwin
