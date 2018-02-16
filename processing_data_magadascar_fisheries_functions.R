@@ -699,7 +699,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
   ####### Begin script ##########
   
   ##########
-  ## Step 1
+  ## Step 0: Check survey name
   
   ### If no survey names provided then generate it from the list of files
   if(is.null(surveys_names)){
@@ -717,7 +717,8 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
   }
   
   ##########
-  ## Step 2
+  ## Step 1: combine files splitted across files 
+  ## This involves finding "avy" in the file name for each zipped dir
   
   #browser()
   
@@ -740,13 +741,14 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
     
     #debug(combine_by_dir_surveys_part)
     ### By default byrow and bycolumn are produced but only one file is selected to be combined in the survey name
-    test_filenames2_zip <- combine_by_dir_surveys_part(list_in_dir_zip[27],
+    combine_obj <- combine_by_dir_surveys_part(list_in_dir_zip[27],
                                                    surveys_names = surveys_names,
                                                    list_filenames=list_filenames,
                                                    combine_option=combine_option, #byrow or bycolumn
                                                    out_dir=out_dir)
     
-    length(test_filenames2_zip)
+    names(combine_obj)
+    length(combine_obj$list_filenames2)
     
     #Example:
     #This is an example of problematic output:
@@ -756,7 +758,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
     #This is 27
     
     #Note list_filenames2 will be different!!! since it 
-    list_filenames2 <- mclapply(list_in_dir_zip,
+    list_combine_obj <- mclapply(list_in_dir_zip,
                                 FUN=combine_by_dir_surveys_part,
                                 surveys_names = surveys_names,
                                 list_filenames=list_filenames,
@@ -766,6 +768,8 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
                                 mc.cores = num_cores)
     
     #Now remove filenames that have been cbind
+    #extract list_filenames2 here
+    #
     #tt <- unlist(list_filenames2)
     list_filenames2 <- unlist(list_filenames2)
     #maybe save files here
@@ -777,7 +781,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
   }
   
   ###########
-  ### Step 3
+  ### Step 3: Combine by  survey names
   
   ##### Now loop through and bind data.frames
   #browser()
