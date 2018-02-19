@@ -2,7 +2,7 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 02/15/2018
+## DATE MODIFIED: 02/19/2018
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -68,15 +68,24 @@ extract_date_feed2go <- function(string_val){
 }
 
 read_file_feed2go <- function(in_filename,in_dir=NULL){
-  ##Quick function to read in the feed2go data
-  #if in_dir is null then the path is contained in the filename
   #
-  #Problem with coding: some of the inputs have a latin1 instead of UTF-8
-  #A possibility is to generate a full function to guess the file encoding
-  #codepages <- setNames(iconvlist(), iconvlist())
-  #This is not implemented here. If a file read using UTF-8 returns a number
-  #of rows equals to zero then the function will attempt to read the file
-  #again using "latin1" file encoding.
+  ##Purpose: Quick function to read in the feed2go data files.
+  ## Since the format may vary, the function iterates between various reading options 
+  ## to maximize the number of rows read in without throwing errors.
+  #
+  # Notes:
+  # 1) If in_dir is null then the path is contained in the filename of the dataset.
+  # 2) Problem with coding: some of the inputs have a latin1 instead of UTF-8
+  #    A possibility is to generate a full function to guess the file encoding
+  #    codepages <- setNames(iconvlist(), iconvlist())
+  #    This is not implemented here. If a file read using UTF-8 returns a number
+  #    of rows equals to zero then the function will attempt to read the file
+  #    again using "latin1" file encoding.
+  #
+  # 3) Separator: There appears to be two separators use in the files: ";",".
+  #    Since the most frequent separator is the semi-colon, the comma character is
+  #    only used if the number of rows read is equal to 1.
+  #
   
   ##### Begin script ######
   
@@ -89,6 +98,7 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
                          stringsAsFactors = F,
                          fileEncoding="UTF-8",
                          check.names=F))
+    
     if(nrow(df)==0){
       df <- try(read.table(in_filename,sep=";",fill=T,
                            header=T,quote = "",
@@ -96,6 +106,7 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
                            fileEncoding="latin1",
                            check.names=F))
     }
+    
     if(nrow(df)==1){
       df <- try(read.table(in_filename,sep=";",
                            header=T,
@@ -103,6 +114,9 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
                            check.names=F))
     }
     
+    ### Adding another separator (",") if number of rows still equal to 1
+
+
     ###### Part 2: deal with error and/or warning
     
     ### Deal with eror: in case it appears read again with option 1:
@@ -112,6 +126,15 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
                            stringsAsFactors = F,
                            fileEncoding="UTF-8",
                            check.names=F))
+    }else{
+      ### Adding another separator (",") if number of rows still equal to 1
+      if(nrow(df)==1){
+        df <- try(read.table(in_filename,sep=",",
+                             header=T,
+                             stringsAsFactors = F,
+                             check.names=F))
+      }
+  
     }
     
     #This error is related to some files being encoded in ASCII "latin1", this
@@ -156,7 +179,7 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
                            header=T,stringsAsFactors = F))
     }
     
-    
+
     ###### Part 2: deal with error and/or warning
     
     ### Deal with eror: in case it appears read again with option 1:
@@ -166,6 +189,15 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
                            stringsAsFactors = F,
                            fileEncoding="UTF-8",
                            check.names=F))
+    }else{
+      ### Adding another separator (",") if number of rows still equal to 1
+      if(nrow(df)==1){
+        df <- try(read.table(in_filename,sep=",",
+                             header=T,
+                             stringsAsFactors = F,
+                             check.names=F))
+      }
+      
     }
     
     #This error is related to some files being encoded in ASCII "latin1", this
@@ -325,11 +357,10 @@ combine_by_id_survey<- function(i,surveys_names,list_filenames,num_cores=1,out_s
   message(paste0("Number of errors when reading files: ",val))
   #this means no try-error
   which(test_error==1)
-  #showing file 76
-  #list_lf[[76]]
-  #View(list_df[[76]])
+  which(test_error==1)
+  #[1] 12 13 74 76
   #debug(read_file_feed2go)
-  #df_val <- read_file_feed2go(list_lf[76]) # use default option
+  df_val <- read_file_feed2go(list_lf[12]) # use default option
   
 
   dim_list_df <-lapply(list_df,FUN=function(x){dim(x)})
@@ -588,7 +619,7 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames,
   month_val_recoded <- recode_val_fun(month_val=month_val,
                          string_val=list_months_values,
                          string_ref=English_months_u)
-  ## Recode addtional values if necessary:
+  ## Recode addtional values if necessary:r
   month_val_recoded <- recode_val_fun(month_val_recoded,
                                       string_val=c("novembra","Novembra"),
                                       string_ref=c("November","November"))
@@ -666,7 +697,7 @@ combine_by_dir_surveys_part <- function(in_dir_zip,surveys_names,list_filenames,
   df_strings$step1 <- df_strings$avy>0 #if greater than zero file has been modified!
   
   ### return obj
-  combine_obj <- list("df_strings",list_filenames2)
+  combine_obj <- list(df_strings,list_filenames2)
   names(combine_obj) <- c("df_strings","list_filenames2")
   
   return(combine_obj)
@@ -748,6 +779,9 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
                                                    out_dir=out_dir)
     
     names(combine_obj)
+    combine_obj$df_strings
+    #View(combine_obj$df_strings)
+    
     length(combine_obj$list_filenames2)
     
     #Example:
@@ -767,13 +801,17 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
                                 mc.preschedule = FALSE,
                                 mc.cores = num_cores)
     
+    list_df_strings <- lapply(list_combine_obj,function(x){x$df_strings})
+    df_modified <- do.call(rbind,list_df_strings)
+    
+    #View(df_modified)
+    out_filename_modifified <- file.path(out_dir,"df_modified_files_inputs.txt")
+    write.table(df_modified,file=out_filename_modifified,sep=",")
+    
     #Now remove filenames that have been cbind
-    #extract list_filenames2 here
-    #
-    #tt <- unlist(list_filenames2)
-    list_filenames2 <- unlist(list_filenames2)
-    #maybe save files here
-    #
+    list_list_filenames2 <- lapply(list_combine_obj,function(x){x$list_filenames2})
+    list_filenames2 <- unlist(list_list_filenames2)
+    
   }else{
     #list_filenames2 <- list_filenames
     #list_lf <- file.path(out_dir,list_dir,list_lf)
@@ -781,7 +819,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
   }
   
   ###########
-  ### Step 3: Combine by  survey names
+  ### Step 2: Combine by  survey names
   
   ##### Now loop through and bind data.frames
   #browser()
@@ -804,7 +842,7 @@ combine_by_surveys<- function(list_filenames,surveys_names,num_cores=1,combine_b
   num_cores_tmp <- 1 #set to 1 since we are already 
   #using mclapply and could go over the number of cores
   #debug(combine_by_id_survey)
-
+  #item 4 and 6 errors
   list_survey_df6 <- combine_by_id_survey(6,
                              surveys_names = surveys_names,
                              list_filenames=list_filenames2,
