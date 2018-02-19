@@ -2,13 +2,13 @@
 ## Importing and processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 02/16/2018
+## DATE MODIFIED: 02/19/2018
 ## AUTHORS: Benoit Parmentier 
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
 ## TO DO:
 ##
-## COMMIT: changes to keep file separator consistent with ;
+## COMMIT: testing updated readfiletogo function
 ##
 ## Links to investigate:
 
@@ -61,7 +61,7 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_madagascar_fisheries_functions_02162018.R" #PARAM 1
+function_processing_data <- "processing_data_madagascar_fisheries_functions_02192018.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
 source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
