@@ -2,7 +2,7 @@
 ## Importing and processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 02/19/2018
+## DATE MODIFIED: 03/04/2019
 ## AUTHORS: Benoit Parmentier 
 ## PROJECT: Fisheries by Jessica Gephart
 ## ISSUE: 
@@ -61,20 +61,24 @@ load_obj <- function(f){
 
 ### Other functions ####
 
-function_processing_data <- "processing_data_madagascar_fisheries_functions_02192018.R" #PARAM 1
+function_processing_data <- "processing_data_madagascar_fisheries_functions_03042019.R" #PARAM 1
 script_path <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/scripts" #path to script #PARAM 
 source(file.path(script_path,function_processing_data)) #source all functions used in this script 1.
 
 ############################################################################
 #####  Parameters and argument set up ###########
 
+#version1
 in_dir <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/workflow_preprocessing/data" #local bpy50 , param 1
+#version2
+in_dir <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/workflow_preprocessing/data/data2" #local bpy50 , param 1
+
 out_dir <- "/nfs/bparmentier-data/Data/projects/Fisheries_and_food_security/workflow_preprocessing/outputs" #param 2
 
 num_cores <- 2 #param 8
 create_out_dir_param=TRUE # param 9
 
-out_suffix <-"processing_fisheries_madagascar_02152018" #output suffix for the files and ouptut folder #param 12
+out_suffix <-"processing_fisheries_madagascar_03042019" #output suffix for the files and ouptut folder #param 12
 unzip_files <- T #param 15
 
 survey_names_updated <-  c("Fahasalamana",
@@ -92,6 +96,9 @@ combine_by_dir <- TRUE #if TRUE then examine in each directory if files are spli
 #other option find the month by examining 2nd word from the end after eliminating the extension
 
 combine_option <- "byrow" #This is the option to combine avy byrow or column
+
+dataset_version <- 2
+#dataset_version <- 1
 
 ############## START SCRIPT ############################
 
@@ -115,50 +122,78 @@ if(create_out_dir_param==TRUE){
 #set up the working directory
 #Create output directory
 
-lf_dir <- list.files(in_dir,full.names=T) #this is the list of folder with RAW data information
-##Get zip files in each input RAW dir
-lf_zip <- unlist(lapply(lf_dir,
-                        function(x){list.files(pattern=paste("*.zip$",sep=""),
-                                                                   path=x,full.names=T)}))
-#Record list of files to unzip and path directory
-df_zip <- data.frame(file_zip=basename(lf_zip))
-df_zip$dir <- dirname(lf_zip)
-df_zip$file_zip <- as.character(df_zip$file_zip)
-
-#debug(extract_date_feed2go)
-#extract_date_feed2go(df_zip$file_zip[1])
-list_date <- lapply(df_zip$file_zip,FUN=extract_date_feed2go)
-df_zip$date <- unlist(list_date)
-
-#reorder by date
-
-#head(df_zip)
-#class(ymd((df_zip$date)))
-#class((df_zip$date))
-df_zip$date <- ymd(df_zip$date) #coerce to date using lubridate function, year-month-day format
-df_zip <- arrange(df_zip, df_zip$date) #order by date using dplyr function
-
-df_zip_fname <- file.path(out_dir,paste("df_zip","_",out_suffix,".txt",sep=""))
-write.table(df_zip,file=df_zip_fname,sep=",")
-
-###### unzip files:
-
-##if unzip_files is TRUE
-if(unzip_files==T){
-  nb_zipped_file <- length(lf_zip)
-  list_lf_r <- vector("list",length=nb_zipped_file)
-  for(i in 1:nb_zipped_file){
-    out_dir_zip <- sub(".zip","",(basename(lf_zip[[i]])))
-    lf_r <- lapply(lf_zip[[i]], unzip,exdir= out_dir_zip)
-    lf_r <- list.files(pattern="*csv$",path=out_dir_zip,full.names = T)
-    list_lf_r[[i]] <- lf_r
+if(data_version==1){
+  #
+  lf_dir <- list.files(in_dir,full.names=T) #this is the list of folder with RAW data information
+  ##Get zip files in each input RAW dir
+  lf_zip <- unlist(lapply(lf_dir,
+                          function(x){list.files(pattern=paste("*.zip$",sep=""),
+                                                 path=x,full.names=T)}))
+  #Record list of files to unzip and path directory
+  df_zip <- data.frame(file_zip=basename(lf_zip))
+  df_zip$dir <- dirname(lf_zip)
+  df_zip$file_zip <- as.character(df_zip$file_zip)
+  
+  #debug(extract_date_feed2go)
+  #extract_date_feed2go(df_zip$file_zip[1])
+  list_date <- lapply(df_zip$file_zip,FUN=extract_date_feed2go)
+  df_zip$date <- unlist(list_date)
+  
+  #reorder by date
+  
+  #head(df_zip)
+  #class(ymd((df_zip$date)))
+  #class((df_zip$date))
+  df_zip$date <- ymd(df_zip$date) #coerce to date using lubridate function, year-month-day format
+  df_zip <- arrange(df_zip, df_zip$date) #order by date using dplyr function
+  
+  df_zip_fname <- file.path(out_dir,paste("df_zip","_",out_suffix,".txt",sep=""))
+  write.table(df_zip,file=df_zip_fname,sep=",")
+  
+  ###### unzip files:
+  
+  ##if unzip_files is TRUE
+  if(unzip_files==T){
+    nb_zipped_file <- length(lf_zip)
+    list_lf_r <- vector("list",length=nb_zipped_file)
+    for(i in 1:nb_zipped_file){
+      out_dir_zip <- sub(".zip","",(basename(lf_zip[[i]])))
+      lf_r <- lapply(lf_zip[[i]], unzip,exdir= out_dir_zip)
+      lf_r <- list.files(pattern="*csv$",path=out_dir_zip,full.names = T)
+      list_lf_r[[i]] <- lf_r
+    }
   }
+  
+  names(list_lf_r) <- basename(lf_zip)
 }
 
-names(list_lf_r) <- basename(lf_zip)
 
-#undebug(summary_data_table)
-#list_obj_summary_test <- summary_data_table(list_lf_r[[1]]) 
+if(data_version==2){
+  #
+  
+  lf_dir <- list.files(in_dir,full.names=T) #this is the list of folder with RAW data information
+  
+  #Screening to remove the directories that are not relevant
+  #MISC and "use paper copy" etc.
+  
+  ##
+  
+  ##Get zip files in each input RAW dir
+  lf_csv <- unlist(lapply(lf_dir,
+                          function(x){list.files(pattern=paste("*.csv$",sep=""),
+                                                 path=x,full.names=T,
+                                                 recursive = T)}))
+  lf_csv <- lf_csv[255:258]
+  ## make output ready for list_lf_r so the code can continue
+  list_lf_r <- lf_csv
+  
+}
+
+
+############# Summarize inputs ################
+  
+debug(summary_data_table)
+list_obj_summary_test <- summary_data_table(list_lf_r[[1]]) 
 
 list_obj_summary <- mclapply(list_lf_r, 
                              FUN=summary_data_table,
