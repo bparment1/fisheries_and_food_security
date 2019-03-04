@@ -2,7 +2,7 @@
 ## Functions used in the processing data from survey for the fisheries project at SESYNC.
 ## 
 ## DATE CREATED: 06/06/2017
-## DATE MODIFIED: 02/19/2018
+## DATE MODIFIED: 03/04/2019
 ## AUTHORS: Benoit Parmentier 
 ## Version: 1
 ## PROJECT: Fisheries by Jessica Gephart
@@ -100,7 +100,7 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
                          check.names=F))
     
     if(nrow(df)==0){
-      df <- try(read.table(in_filename,sep=";",fill=T,
+     df <- try(read.table(in_filename,sep=";",fill=T,
                            header=T,quote = "",
                            stringsAsFactors = F,
                            fileEncoding="latin1",
@@ -109,6 +109,13 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
     
     if(nrow(df)==1){
       df <- try(read.table(in_filename,sep=";",
+                           header=T,
+                           stringsAsFactors = F,
+                           check.names=F))
+    }
+    
+    if(ncol(df)==1){
+      df <- try(read.table(in_filename,sep=",",
                            header=T,
                            stringsAsFactors = F,
                            check.names=F))
@@ -229,16 +236,28 @@ read_file_feed2go <- function(in_filename,in_dir=NULL){
   return(df)
 }
 
-summary_data_table <- function(list_lf){
+summary_data_table <- function(list_lf,in_dir,dataset_version=2){
   
   ### This function lists all input files from the Madagascar survey 
   ### and generate tables of summary.
   ### Summary includes number of rows and columns.
-  
+  #INPUTS
+  #1) list_lf: list of csv files from surveys
+  #2) in_dir: input dir for the list of files provided, if NULL, path is included in list_lf
+  #3) dataset_version2: project version 2 data
   
   ##### Begin script #####
   
-  list_df <- lapply(list_lf,read_file_feed2go,out_dir)
+  if(dataset_version==1){
+    list_df <- lapply(list_lf,read_file_feed2go,in_dir=in_dir)
+  }
+  if(dataset_version==2){
+    list_df <- lapply(list_lf,read_file_feed2go,in_dir=NULL)
+  }
+
+  #debug(read_file_feed2go)
+  list_df <- read_file_feed2go(list_lf,in_dir=NULL)
+  
   
   #lapply(list_df,summary_table_df)
   dim_df <- dim_surveys_df(list_df)
